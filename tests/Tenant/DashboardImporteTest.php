@@ -30,9 +30,12 @@ class DashboardImporteTest extends TenantTestCase
 
         $antwort->assertOk();
         $antwort->assertSee('Daten einlesen');
-        $antwort->assertSee('Lehrkräfte aus ASV');
-        $antwort->assertSee('Schüler und Kurse aus ASV');
-        $antwort->assertSee('Stundenplan aus Untis');
+        $antwort->assertSee('0 von 3 erledigt');
+        $antwort->assertSee('Schüler und Kurse');
+        $antwort->assertSee('Stundenplan');
+        $antwort->assertSee(route('setup.imports.template', 'stundenplan'), false);
+        // Das alte Banner („Bausteine“) zählte auch die Vorbelegung mit.
+        $antwort->assertDontSee('Bausteinen fehlen');
         $antwort->assertSee(route('setup.imports') . '#lehrkraefte', false);
         $antwort->assertSee(route('setup.imports.template', 'schueler'), false);
         $antwort->assertSee(route('teachers.import.form'), false);

@@ -41,23 +41,32 @@ class SetupChecklistTest extends TenantTestCase
 
         $status = $this->statusNachSchluessel($items);
 
-        // Aus der Grundausstattung des TenantSeeders vorhanden …
-        $this->assertSame(SetupChecklistService::STATUS_DONE, $status['zeitslots']);
+        // Pflicht sind nur die drei Dateien — und die fehlen alle.
+        $this->assertSame(['erledigt' => 0, 'gesamt' => 3, 'prozent' => 0, 'offen' => 3], $progress);
 
-        // … aber mit den erfundenen Vorgabe-Raumnummern, also nicht fertig.
-        $this->assertSame(
-            SetupChecklistService::STATUS_PARTIAL,
-            $status['raeume'],
-            'Vorgabe-Raumnummern aus dem TenantSeeder dürfen nicht als erledigt gelten.'
-        );
-
-        // Alles, was die Schule selbst einspielen muss, fehlt noch.
-        foreach (['lehrkraefte', 'schueler', 'kurse', 'pruefungszuordnungen'] as $key) {
+        foreach (['lehrkraefte', 'schueler', 'stundenplan'] as $key) {
             $this->assertSame(SetupChecklistService::STATUS_OPEN, $status[$key], "{$key} sollte offen sein.");
         }
 
-        $this->assertGreaterThan(0, $progress['offen']);
-        $this->assertLessThan(100, $progress['prozent']);
+        // Was die Grundausstattung vorbelegt, steht unter „Anpassen" und zählt nicht.
+        $anpassen = array_column(array_filter(
+            $items,
+            fn (array $item) => $item['gruppe'] === SetupChecklistService::GRUPPE_ANPASSEN
+        ), 'required', 'key');
+        $this->assertSame(
+            ['schulstammdaten', 'raeume', 'sitzvorlagen', 'zeitslots', 'schuleinstellungen'],
+            array_keys($anpassen)
+        );
+        $this->assertNotContains(true, $anpassen);
+
+        $this->assertSame(SetupChecklistService::STATUS_DONE, $status['zeitslots']);
+        $this->assertSame(SetupChecklistService::STATUS_DONE, $status['sitzvorlagen']);
+        $this->assertSame(SetupChecklistService::STATUS_PARTIAL, $status['raeume'], 'Vorgabenamen = noch nicht angepasst.');
+
+        // Keine eigenen Zeilen mehr: Kurse und Zuordnungen kommen mit dem Schülerimport.
+        $this->assertArrayNotHasKey('kurse', $status);
+        $this->assertArrayNotHasKey('pruefungszuordnungen', $status);
+        $this->assertArrayNotHasKey('benutzerkonten', $status);
     }
 
     public function test_eingerichtete_schule_meldet_die_eigenen_bausteine_als_erledigt(): void
@@ -74,48 +83,20 @@ class SetupChecklistTest extends TenantTestCase
         } finally {
         }
 
-        $eigene = array_filter(
+        $einlesen = array_filter(
             $items,
-            fn (array $item) => $item['scope'] === SetupChecklistService::SCOPE_SCHULE && $item['required']
+            fn (array $item) => $item['gruppe'] === SetupChecklistService::GRUPPE_EINLESEN
         );
 
-        foreach ($eigene as $item) {
+        foreach ($einlesen as $item) {
             $this->assertSame(
                 SetupChecklistService::STATUS_DONE,
                 $item['status'],
-                "Baustein „{$item['title']}\" sollte nach dem Testschul-Seeder erledigt sein ({$item['detail']})."
+                "„{$item['title']}\" sollte nach dem Testschul-Seeder eingelesen sein ({$item['detail']})."
             );
         }
-    }
 
-    public function test_zugaenge_werden_aus_der_zentralen_datenbank_gelesen(): void
-    {
-        $school = $this->createTestSchool();
-
-
-        try {
-            $vorher = $this->statusNachSchluessel($this->checkliste()->items())['benutzerkonten'];
-
-            User::create([
-                'name' => 'Testplaner',
-                'email' => self::PLANNER_EMAIL,
-                'password' => 'irrelevant-fuer-den-test',
-                'role' => 'planner',
-                'school_id' => $school->getKey(),
-                'is_active' => true,
-            ]);
-
-            $nachher = $this->statusNachSchluessel($this->checkliste()->items())['benutzerkonten'];
-        } finally {
-            User::where('email', self::PLANNER_EMAIL)->delete();
-        }
-
-        $this->assertSame(SetupChecklistService::STATUS_OPEN, $vorher);
-        $this->assertSame(
-            SetupChecklistService::STATUS_DONE,
-            $nachher,
-            'Konten liegen zentral — die Abfrage muss auch im Tenant-Kontext dorthin gehen.'
-        );
+        $this->assertSame(0, $this->checkliste()->progress($items)['offen']);
     }
 
     /**
@@ -142,9 +123,11 @@ class SetupChecklistTest extends TenantTestCase
             $response->assertOk();
             $response->assertViewIs('setup.index');
             $response->assertViewHas('progress');
-            $response->assertSee('Von der Schule zu erledigen');
-            $response->assertSee('Zentral vom Administrator');
+            $response->assertSee('Drei Dateien einlesen');
+            $response->assertSee('Vorbelegt');
             $response->assertSee('Lehrkräfte');
+            $response->assertSee('Stundenplan');
+            $response->assertDontSee('Administrator');
         } finally {
             User::where('email', self::PLANNER_EMAIL)->delete();
         }
