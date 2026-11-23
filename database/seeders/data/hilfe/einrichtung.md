@@ -3,85 +3,56 @@ titel: Einrichtung einer Schule
 gruppe: Erste Schritte
 reihenfolge: 20
 routen: setup
-stichworte: einrichtung, checkliste, onboarding, erste schritte, planungsreife
+stichworte: einrichtung, checkliste, onboarding, erste schritte, planungsreife, import
 ---
 
-Die Seite *Einrichtung* sagt Ihnen, was Ihrer Schule bis zur Planungsreife noch
-fehlt. Sie ist reine Anzeige — erledigt wird jeder Punkt in der Maske, auf die
-er verweist. Jede Zeile trägt rechts einen Knopf: **Erledigen**, solange etwas
-fehlt, **Ansehen**, wenn der Punkt steht.
+Die Seite *Einrichtung* zeigt, was Ihrer Schule bis zur Planung noch fehlt. Sie
+hat zwei Teile.
 
-## Die drei Zustände
+## Drei Dateien einlesen
 
-- **✓ erledigt** — nichts mehr zu tun.
-- **◐ teilweise erledigt** — Daten sind da, aber noch nicht vollständig. Der
-  Text daneben nennt, was fehlt.
-- **○ offen** — hier ist noch gar nichts.
+Notwendig sind nur drei Dateien. Der Fortschrittsbalken zählt nur sie:
 
-Der Fortschrittsbalken zählt nur die Pflichtpunkte. **Die Reihenfolge ist ein
-Vorschlag, keine Vorgabe** — mit einer Ausnahme, siehe unten.
+1. **Lehrkräfte** aus ASV.
+2. **Schüler und Kurse** aus ASV. Der Import legt die Kurse und die fünf
+   Prüfungen je Prüfling gleich mit an. Fehlt danach einem Kurs die Lehrkraft
+   oder einem Prüfling eine Prüfung, steht das in der Zeile.
+3. **Stundenplan** aus Untis. Daraus liest die Kolloquiumsplanung, an welchen
+   Tagen eine Lehrkraft ohnehin nicht an der Schule ist.
 
-## Was zentral erledigt wird
+Jede Zeile hat drei Verweise: **Anleitung** (Exportweg im Quellsystem und
+Spaltenbedeutung), **Vorlage** (eine Beispieldatei) und **Einlesen** (die
+Importmaske). Dieselben Zeilen stehen auf der Startseite, solange eine Datei
+fehlt.
 
-Zwei Punkte stehen unter *Zentral vom Administrator*, weil Ihre Schule sie nicht
-selbst bearbeiten kann:
+**Erst die Lehrkräfte, dann die Schüler.** Der Schülerimport legt für jedes
+Lehrerkürzel, das er nicht kennt, den Platzhalter `EXTERN` an.
 
-- **Schulstammdaten** — Anschrift, Ort, Postleitzahl und E-Mail. Sie erscheinen
-  auf Ausdrucken und Niederschriften.
-- **Zugänge** — mindestens ein Benutzerkonto mit Planungsrecht.
+## Vorbelegt — bei Gelegenheit anpassen
 
-Beide zählen trotzdem in den Fortschritt. Fehlt etwas, wenden Sie sich an die
-Administration.
+Beim Einrichten legt das Programm ein Gerüst an, mit dem sofort geplant werden
+kann. Ein Punkt ● bedeutet: noch die Vorgabe oder unvollständig.
 
-## Was Ihre Schule erledigt
-
-- **Räume** — solange nur die Platzhalter der Grundausstattung dastehen
-  („Raum 001" bis „Raum 207", „Flur 2. OG"), gilt der Punkt als teilweise
-  erledigt: Benennen Sie die Räume nach Ihren echten Raumnummern um, löschen
-  Sie überzählige und legen Sie fehlende an.
-- **Sitzvorlagen** — vollständig ist der Punkt erst, wenn jeder Prüfungsraum
-  eine Standardvorlage hat.
-- **Zeitslots für die Kolloquien** — mindestens einer im aktuellen
-  Prüfungszeitraum.
-- **Lehrkräfte** — bestehen alle Einträge nur aus dem Platzhalter `EXTERN`, ist
-  der Punkt erst teilweise erledigt.
-- **Schüler** — mindestens einer im aktuellen Prüfungszeitraum; die Zeile nennt
-  zusätzlich die Zahl in Jahrgangsstufe 13.
-- **Kurse** — teilweise, solange Kurse ohne Lehrkraft dastehen.
-- **Prüfungszuordnungen** — jeder Prüfling der Jahrgangsstufe 13 braucht seine
-  fünf Prüfungsfächer.
-- **Schuleinstellungen** — der einzige *optionale* Punkt. Ohne Eintrag gelten
-  die Vorgabewerte.
-
-## Was die Grundausstattung mitbringt
-
-Beim Einrichten legt das Programm ein Gerüst an, das Sie nur noch anpassen:
-
-- **Räume und Sitzpläne** — zwölf Prüfungsräume (neun Klassenzimmer 8×4, zwei
-  kleine Räume 4×4, ein Fachraum 6×3), dazu Vorbereitungsraum, Warteraum und
-  eine Fluraufsicht. Jeder Prüfungsraum hat schon einen Sitzplan mit Pult und
+- **Schulstammdaten** — Anschrift, Ort, Postleitzahl und E-Mail für
+  Niederschriften und Exporte.
+- **Räume** — zwölf Prüfungsräume (neun Klassenzimmer 8×4, zwei kleine Räume
+  4×4, ein Fachraum 6×3), Vorbereitungsraum, Warteraum und eine Fluraufsicht,
+  benannt „Raum 001“ bis „Raum 207“ und „Flur 2. OG“. Benennen Sie sie nach
+  Ihren Raumnummern um, löschen Sie überzählige, legen Sie fehlende an.
+- **Sitzpläne** — jeder Prüfungsraum hat einen Sitzplan mit Pult und
   gesperrten Plätzen.
 - **Zeitslots der Kolloquien** — montags bis donnerstags fünf Prüfungen am
   Nachmittag (13:10 bis 17:00), freitags fünf am Vormittag (08:30 bis 13:40),
-  je 30 Minuten Vorbereitung und 30 Minuten Prüfung. Feiertage in den
-  Prüfungswochen bleiben frei.
-- **Aufsichten** — drei Aufsichtsfenster je Kolloquiumstag sowie zwei Raster
-  für die schriftlichen Prüfungen (Standard und moderne Fremdsprachen mit
-  Hörverstehen).
+  je 30 Minuten Vorbereitung und Prüfung. Feiertage in den Prüfungswochen
+  bleiben frei. Dazu drei Aufsichtsfenster je Tag.
+- **Schuleinstellungen** — Hinweistexte und Schwellenwerte; die Vorgabewerte
+  sind brauchbar.
 
-## Die eine Reihenfolge, die zählt
-
-**Erst die Lehrkräfte, dann die Schüler.** Der Schülerimport legt für jedes
-Lehrerkürzel, das er nicht kennt, den Platzhalter `EXTERN` an — und aus dem wird
-nachträglich keine Lehrkraft mehr.
-
-Zu den beiden Importen führt die Zeile den zusätzlichen Verweis **„Anleitung und
-Vorlage für diese Datei"**. Dahinter liegen die geführten Importe: Exportweg im
-Quellsystem, Spaltenbedeutung und eine Beispieldatei zum Herunterladen.
+Außerdem angelegt, aber ohne eigene Zeile: zwei Aufsichtsraster für die
+schriftlichen Prüfungen (Standard und moderne Fremdsprachen mit Hörverstehen).
 
 ## Nach dem Schuljahreswechsel
 
-Ist die Einrichtung vollständig, meldet die Seite das. Nach einem
-Schuljahreswechsel stehen einzelne Punkte wieder offen — Schüler, Kurse und
-Zeitslots hängen am Prüfungszeitraum und sind für den neuen Jahrgang neu zu
-füllen. Räume, Sitzvorlagen und Lehrkräfte bleiben.
+Schüler und Stundenplan hängen am Jahrgang bzw. Schuljahr. Nach dem Wechsel
+stehen diese Zeilen wieder offen, und die Startseite zeigt die Dateien erneut.
+Räume, Sitzpläne und Lehrkräfte bleiben.
