@@ -4,26 +4,34 @@ namespace Database\Seeders;
 
 use App\Models\ExamPeriod;
 use App\Models\School;
+use App\Support\Grundausstattung;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 /**
- * Grundausstattung einer frisch angelegten Schule (Tenant).
+ * Grundausstattung einer frisch angelegten Schule.
  *
- * Läuft über `tenants:seed --class=TenantSeeder`, angestoßen von
- * `App\Listeners\InitializeTenantDatabase` nach dem Migrieren der Tenant-DB.
+ * Läuft bei der Ersteinrichtung (ErsteinrichtungController) und in den Tests
+ * (TenantTestCase::createTestSchool). Was angelegt wird, steht in
+ * App\Support\Grundausstattung — nachgebildet dem Abitur 2026 der
+ * Pilotschule, mit neutralen Namen (Stand 23.11.2026):
  *
- * Fehler werden hier bewusst als Exception geworfen und nicht nur auf der
- * Konsole gemeldet: Der Seeder läuft in einer Kette (School::create →
- * stancl-Pipeline → Listener → Artisan::call), und ein `return` nach einer
- * Fehlermeldung liefert Exit-Code 0 zurück. Die Kette meldet dann Erfolg,
- * obwohl die Tenant-Datenbank leer bleibt — genau so ist der Defekt vom
- * 25.08.2026 unbemerkt geblieben.
+ * - Prüfungsmaterialien,
+ * - vier Sitzpläne und fünfzehn Räume, die Prüfungsräume mit Sitzplan,
+ * - Zeitslot-Vorlagen (Wochentag, Freitag, Ausweichtag),
+ * - die Kolloquiumsslots: Mo–Do nachmittags, freitags vormittags; Tage, die
+ *   im bayernweiten Kalender Feiertag oder Ferien sind, bleiben frei,
+ * - die Aufsichtsfenster der Kolloquien mit einem Standardraster,
+ * - die Aufsichtsraster der schriftlichen Prüfungen (Standard, Fremdsprachen).
  *
- * Alle Schritte sind idempotent: ein zweiter Lauf gegen denselben Tenant legt
- * nichts doppelt an, sondern überspringt, was schon vorhanden ist.
+ * Fehler werden bewusst als Exception geworfen und nicht nur auf der
+ * Konsole gemeldet: Ein `return` nach einer Fehlermeldung liefert Exit-Code 0,
+ * die Kette meldet dann Erfolg, obwohl nichts angelegt ist — so ist der
+ * Defekt vom 25.08.2026 unbemerkt geblieben.
+ *
+ * Alle Schritte sind idempotent: Was schon da ist, wird übersprungen.
  */
 class TenantSeeder extends Seeder
 {
@@ -40,10 +48,11 @@ class TenantSeeder extends Seeder
         $dates = $this->examDates($examPeriod);
 
         $this->seedExamMaterials($now);
-        $this->seedRooms($now);
+        $this->seedRoomsAndSeating($now);
         $this->seedSlotTemplates((int) $examPeriod->id, $now);
         $this->seedTimeSlots((int) $examPeriod->id, $dates, $now);
         $this->seedSupervisionTimeSlots((int) $examPeriod->id, $dates, $now);
+        $this->seedWrittenExamSupervisionGrids($now);
 
         $this->command->info('');
         $this->command->info('✅ Grunddaten eingespielt. Lehrer, Schüler und Kurse kommen über den Import.');
@@ -62,11 +71,9 @@ class TenantSeeder extends Seeder
     }
 
     /**
-     * Jüngster zentral gepflegter Prüfungszeitraum.
-     *
-     * Bewusst nicht auf ein festes Jahr verdrahtet: Eine heute angelegte Schule
-     * soll den kommenden Abiturjahrgang bekommen, nicht den, der beim Schreiben
-     * dieses Seeders aktuell war.
+     * Jüngster Prüfungszeitraum. Die Stammdaten legen Zeiträume nur bis zum
+     * laufenden Schuljahr an (BayernTermine), der jüngste ist also der
+     * Jahrgang, der gerade auf das Abitur zugeht.
      */
     private function resolveExamPeriod(): ExamPeriod
     {
@@ -74,8 +81,8 @@ class TenantSeeder extends Seeder
 
         if (!$examPeriod instanceof ExamPeriod) {
             throw new RuntimeException(
-                'Kein Prüfungszeitraum in der zentralen Datenbank. Bitte zuerst den '
-                . 'passenden Abitur-Seeder ausführen (z. B. Abitur2027Seeder).'
+                'Kein Prüfungszeitraum vorhanden. Bitte zuerst die Stammdaten einspielen '
+                . '(php artisan db:seed bzw. termine:einspielen --zeitraeume).'
             );
         }
 
@@ -83,7 +90,9 @@ class TenantSeeder extends Seeder
     }
 
     /**
-     * Alle Kolloquiumstage der beiden Prüfungswochen des Zeitraums.
+     * Die Kolloquiumstage der beiden Prüfungswochen: Mo–Fr, ohne Tage, die im
+     * bayernweiten Kalender Feiertag oder Ferien sind (2028 etwa Christi
+     * Himmelfahrt mitten in der ersten Woche).
      *
      * @return list<string> Datumswerte im Format Y-m-d
      */
@@ -96,11 +105,27 @@ class TenantSeeder extends Seeder
             $end = Carbon::parse($examPeriod->{$to})->startOfDay();
 
             for ($day = $start->copy(); $day->lessThanOrEqualTo($end); $day->addDay()) {
+                if ($day->isWeekend() || $this->isDayOff($day->toDateString())) {
+                    continue;
+                }
+
                 $dates[] = $day->toDateString();
             }
         }
 
         return $dates;
+    }
+
+    private function isDayOff(string $date): bool
+    {
+        return DB::table('global_calendar_events')
+            ->whereIn('event_type', ['holiday', 'public_holiday'])
+            ->where('event_date', '<=', $date . ' 23:59:59')
+            ->where(function ($q) use ($date) {
+                $q->where(fn ($q) => $q->whereNull('end_date')->where('event_date', '>=', $date))
+                    ->orWhere('end_date', '>=', $date);
+            })
+            ->exists();
     }
 
     private function seedExamMaterials(Carbon $now): void
@@ -146,7 +171,12 @@ class TenantSeeder extends Seeder
         $this->command->info('📚 ' . count($rows) . ' Prüfungsmaterialien angelegt.');
     }
 
-    private function seedRooms(Carbon $now): void
+    /**
+     * Sitzpläne und Räume. Jeder Prüfungsraum bekommt seinen Sitzplan als
+     * Standard-Variante (room_seating_templates) und zusätzlich in der alten
+     * Spalte rooms.seating_template_id, die einige Masken noch lesen.
+     */
+    private function seedRoomsAndSeating(Carbon $now): void
     {
         if (DB::table('rooms')->exists()) {
             $this->command->info('🏢 Räume bereits vorhanden — übersprungen.');
@@ -154,37 +184,68 @@ class TenantSeeder extends Seeder
             return;
         }
 
-        $rooms = [
-            ['MB201', 'exam', null],
-            ['MB202', 'exam', null],
-            ['MB203', 'exam', null],
-            ['MB204', 'exam', null],
-            ['MB205', 'exam', null],
-            ['MB206', 'exam', null],
-            ['MB207', 'exam', null],
-            ['MB105', 'preparation', 'Vorbereitungsraum'],
-            ['B2', 'corridor', 'Fluraufsicht'],
-            ['MA206', 'waiting', 'Warteraum'],
-            ['MA207', 'preparation', 'Vorbereitungsraum 2'],
-            ['MA208', 'lockdown', 'Lockdown-Raum'],
-        ];
+        $seatTypes = ['.' => 'available', 'B' => 'blocked', 'P' => 'teacher_desk', 'G' => 'aisle'];
+        $templateIds = [];
+        $seats = [];
 
-        $rows = [];
+        foreach (Grundausstattung::SITZPLAENE as $key => $plan) {
+            $templateIds[$key] = DB::table('seating_templates')->insertGetId([
+                'name' => $plan['name'],
+                'description' => $plan['beschreibung'],
+                'rows' => count($plan['plan']),
+                'columns' => strlen($plan['plan'][0]),
+                'door_positions' => json_encode([$plan['tuer']]),
+                'orientation' => $plan['blick'],
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
 
-        foreach ($rooms as [$number, $type, $notes]) {
-            $rows[] = [
+            foreach ($plan['plan'] as $rowIndex => $row) {
+                foreach (str_split($row) as $colIndex => $code) {
+                    $seats[] = [
+                        'template_id' => $templateIds[$key],
+                        'row_number' => $rowIndex + 1,
+                        'column_number' => $colIndex + 1,
+                        'seat_type' => $seatTypes[$code],
+                        'notes' => null,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                }
+            }
+        }
+
+        DB::table('seating_template_seats')->insert($seats);
+
+        $variants = 0;
+
+        foreach (Grundausstattung::RAEUME as [$number, $type, $notes, $planKey]) {
+            $templateId = $planKey !== null ? $templateIds[$planKey] : null;
+
+            $roomId = DB::table('rooms')->insertGetId([
                 'room_number' => $number,
                 'room_type' => $type,
                 'notes' => $notes,
-                'seating_template_id' => null,
+                'seating_template_id' => $templateId,
                 'is_active' => true,
                 'created_at' => $now,
                 'updated_at' => $now,
-            ];
+            ]);
+
+            if ($templateId !== null) {
+                DB::table('room_seating_templates')->insert([
+                    'room_id' => $roomId,
+                    'variant' => 'standard',
+                    'seating_template_id' => $templateId,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+                $variants++;
+            }
         }
 
-        DB::table('rooms')->insert($rows);
-        $this->command->info('🏢 ' . count($rows) . ' Räume angelegt.');
+        $this->command->info('🪑 ' . count($templateIds) . ' Sitzpläne mit ' . count($seats) . ' Feldern angelegt.');
+        $this->command->info('🏢 ' . count(Grundausstattung::RAEUME) . " Räume angelegt, {$variants} davon mit Sitzplan.");
     }
 
     private function seedSlotTemplates(int $examPeriodId, Carbon $now): void
@@ -195,17 +256,9 @@ class TenantSeeder extends Seeder
             return;
         }
 
-        $slots = $this->standardSlotTimes();
-
-        $templates = [
-            'Normaler Wochentag (Mo-Do)' => ['Standardtag mit 5 Prüfungen', 5, [120, 115, 110, 100, 90]],
-            'Freitag (verkürzt)' => ['Verkürzter Freitag mit nur 3 Prüfungen', 3, [70, 65, 60]],
-            'Intensivtag (6 Prüfungen)' => ['Bei Bedarf: 6 Prüfungen', 6, [110, 105, 100, 95, 85, 75]],
-        ];
-
         $items = [];
 
-        foreach ($templates as $name => [$description, $count, $weights]) {
+        foreach (Grundausstattung::SLOT_VORLAGEN as $name => [$description, $morning, $weights]) {
             $templateId = DB::table('slot_templates')->insertGetId([
                 'exam_period_id' => $examPeriodId,
                 'name' => $name,
@@ -214,16 +267,16 @@ class TenantSeeder extends Seeder
                 'updated_at' => $now,
             ]);
 
-            for ($slotNumber = 1; $slotNumber <= $count; $slotNumber++) {
-                $times = $slots[$slotNumber];
+            $times = $morning ? Grundausstattung::SLOTS_VORMITTAG : Grundausstattung::SLOTS_NACHMITTAG;
 
+            foreach ($times as $slotNumber => [$prepStart, $prepEnd, $examStart, $examEnd]) {
                 $items[] = [
                     'slot_template_id' => $templateId,
                     'slot_number' => $slotNumber,
-                    'prep_start_time' => $times['prep_start'],
-                    'prep_end_time' => $times['prep_end'],
-                    'exam_start_time' => $times['exam_start'],
-                    'exam_end_time' => $times['exam_end'],
+                    'prep_start_time' => $prepStart,
+                    'prep_end_time' => $prepEnd,
+                    'exam_start_time' => $examStart,
+                    'exam_end_time' => $examEnd,
                     'preference_weight' => $weights[$slotNumber - 1],
                     'notes' => null,
                     'created_at' => $now,
@@ -233,7 +286,7 @@ class TenantSeeder extends Seeder
         }
 
         DB::table('slot_template_items')->insert($items);
-        $this->command->info('⏰ 3 Zeitslot-Vorlagen mit ' . count($items) . ' Einträgen angelegt.');
+        $this->command->info('⏰ ' . count(Grundausstattung::SLOT_VORLAGEN) . ' Zeitslot-Vorlagen mit ' . count($items) . ' Einträgen angelegt.');
     }
 
     /**
@@ -247,22 +300,22 @@ class TenantSeeder extends Seeder
             return;
         }
 
-        $slots = $this->standardSlotTimes();
         $rows = [];
 
         foreach ($dates as $date) {
-            for ($slotNumber = 1; $slotNumber <= 5; $slotNumber++) {
-                $times = $slots[$slotNumber];
+            $friday = Grundausstattung::istFreitag($date);
+            $times = $friday ? Grundausstattung::SLOTS_VORMITTAG : Grundausstattung::SLOTS_NACHMITTAG;
 
+            foreach ($times as $slotNumber => [$prepStart, $prepEnd, $examStart, $examEnd]) {
                 $rows[] = [
                     'exam_period_id' => $examPeriodId,
                     'date' => $date,
                     'slot_number' => $slotNumber,
-                    'prep_start_time' => $times['prep_start'],
-                    'prep_end_time' => $times['prep_end'],
-                    'exam_start_time' => $times['exam_start'],
-                    'exam_end_time' => $times['exam_end'],
-                    'preference_weight' => 100,
+                    'prep_start_time' => $prepStart,
+                    'prep_end_time' => $prepEnd,
+                    'exam_start_time' => $examStart,
+                    'exam_end_time' => $examEnd,
+                    'preference_weight' => $friday ? Grundausstattung::GEWICHT_FREITAG : Grundausstattung::GEWICHTE_WOCHENTAG[$slotNumber],
                     'is_active' => true,
                     'notes' => null,
                     'created_at' => $now,
@@ -272,10 +325,13 @@ class TenantSeeder extends Seeder
         }
 
         DB::table('time_slots')->insert($rows);
-        $this->command->info('📅 ' . count($rows) . ' Zeitslots angelegt (' . count($dates) . ' Tage × 5 Slots).');
+        $this->command->info('📅 ' . count($rows) . ' Zeitslots an ' . count($dates) . ' Tagen angelegt (Mo–Do nachmittags, Fr vormittags).');
     }
 
     /**
+     * Aufsichtsfenster der Kolloquien, gehängt an ein Standardraster des
+     * Zeitraums (wie im Bestand der Pilotschule).
+     *
      * @param list<string> $dates
      */
     private function seedSupervisionTimeSlots(int $examPeriodId, array $dates, Carbon $now): void
@@ -286,19 +342,28 @@ class TenantSeeder extends Seeder
             return;
         }
 
-        $windows = [
-            1 => ['13:30:00', '14:30:00'],
-            2 => ['14:30:00', '15:30:00'],
-            3 => ['15:30:00', '16:40:00'],
-        ];
+        $gridId = DB::table('supervision_grids')->where('exam_period_id', $examPeriodId)->where('is_default', true)->value('id')
+            ?? DB::table('supervision_grids')->insertGetId([
+                'exam_period_id' => $examPeriodId,
+                'name' => 'Standard',
+                'description' => 'Aufsicht in Warteraum und Flur während der Kolloquien',
+                'color' => 'blue',
+                'is_default' => true,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
 
         $rows = [];
 
         foreach ($dates as $date) {
+            $windows = Grundausstattung::istFreitag($date)
+                ? Grundausstattung::AUFSICHT_VORMITTAG
+                : Grundausstattung::AUFSICHT_NACHMITTAG;
+
             foreach ($windows as $slotNumber => [$start, $end]) {
                 $rows[] = [
                     'exam_period_id' => $examPeriodId,
-                    'supervision_grid_id' => null,
+                    'supervision_grid_id' => $gridId,
                     'date' => $date,
                     'start_time' => $start,
                     'end_time' => $end,
@@ -311,23 +376,53 @@ class TenantSeeder extends Seeder
         }
 
         DB::table('supervision_time_slots')->insert($rows);
-        $this->command->info('👮 ' . count($rows) . ' Aufsichtszeitslots angelegt (' . count($dates) . ' Tage × 3 Slots).');
+        $this->command->info('👮 ' . count($rows) . ' Aufsichtszeitslots an ' . count($dates) . ' Tagen angelegt.');
     }
 
     /**
-     * Die sechs Standard-Zeitfenster eines Kolloquiumstags.
-     *
-     * @return array<int, array{prep_start: string, prep_end: string, exam_start: string, exam_end: string}>
+     * Aufsichtsraster der schriftlichen Prüfungen. Die Slotnummern laufen
+     * über alle Raster durch (1–8, 9–16) wie im Bestand — ältere Stellen
+     * lesen die Nummer ohne das Raster.
      */
-    private function standardSlotTimes(): array
+    private function seedWrittenExamSupervisionGrids(Carbon $now): void
     {
-        return [
-            1 => ['prep_start' => '08:00:00', 'prep_end' => '08:30:00', 'exam_start' => '08:30:00', 'exam_end' => '09:00:00'],
-            2 => ['prep_start' => '09:10:00', 'prep_end' => '09:40:00', 'exam_start' => '09:40:00', 'exam_end' => '10:10:00'],
-            3 => ['prep_start' => '10:20:00', 'prep_end' => '10:50:00', 'exam_start' => '10:50:00', 'exam_end' => '11:20:00'],
-            4 => ['prep_start' => '11:30:00', 'prep_end' => '12:00:00', 'exam_start' => '12:00:00', 'exam_end' => '12:30:00'],
-            5 => ['prep_start' => '12:40:00', 'prep_end' => '13:10:00', 'exam_start' => '13:10:00', 'exam_end' => '13:40:00'],
-            6 => ['prep_start' => '13:50:00', 'prep_end' => '14:20:00', 'exam_start' => '14:20:00', 'exam_end' => '14:50:00'],
-        ];
+        if (DB::table('written_exam_supervision_grids')->exists()) {
+            $this->command->info('✏️ Aufsichtsraster der schriftlichen Prüfungen bereits vorhanden — übersprungen.');
+
+            return;
+        }
+
+        $number = 1;
+
+        foreach (Grundausstattung::SCHRIFTLICHE_AUFSICHT as $grid) {
+            $gridId = DB::table('written_exam_supervision_grids')->insertGetId([
+                'name' => $grid['name'],
+                'description' => null,
+                'color' => $grid['farbe'],
+                'is_default' => $grid['standard'],
+                'is_foreign_language' => $grid['fremdsprache'],
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            $rows = [];
+
+            foreach ($grid['slots'] as [$start, $end, $label]) {
+                $rows[] = [
+                    'slot_number' => $number++,
+                    'written_exam_supervision_grid_id' => $gridId,
+                    'start_time' => $start,
+                    'end_time' => $end,
+                    'label' => $label,
+                    'notes' => null,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+
+            DB::table('written_exam_supervision_time_slots')->insert($rows);
+        }
+
+        $this->command->info('✏️ ' . count(Grundausstattung::SCHRIFTLICHE_AUFSICHT) . ' Aufsichtsraster der schriftlichen Prüfungen angelegt.');
     }
 }

@@ -12,6 +12,7 @@ use App\Models\StudentExam;
 use App\Models\Teacher;
 use App\Models\TimeSlot;
 use App\Models\User;
+use App\Support\Grundausstattung;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -41,20 +42,6 @@ class SetupChecklistService
 
     public const SCOPE_ADMIN = 'admin';
     public const SCOPE_SCHULE = 'schule';
-
-    /**
-     * Raumnummern, die der TenantSeeder als Grundausstattung anlegt.
-     *
-     * Sie sind erfunden und muessen durch die echten Raeume der Schule ersetzt
-     * werden — stehen sie noch unveraendert da, ist der Punkt nicht erledigt,
-     * auch wenn "Raeume vorhanden" formal stimmt.
-     *
-     * @var list<string>
-     */
-    private const VORGABE_RAEUME = [
-        'MB201', 'MB202', 'MB203', 'MB204', 'MB205', 'MB206', 'MB207',
-        'MB105', 'B2', 'MA206', 'MA207', 'MA208',
-    ];
 
     public function __construct(
         private readonly CurrentExamPeriodService $examPeriods,
@@ -105,9 +92,9 @@ class SetupChecklistService
      *
      * @return array{erledigt: int, gesamt: int, prozent: int, offen: int}
      */
-    public function progress(): array
+    public function progress(?array $items = null): array
     {
-        $pflicht = array_values(array_filter($this->items(), fn (array $item) => $item['required']));
+        $pflicht = array_values(array_filter($items ?? $this->items(), fn (array $item) => $item['required']));
         $gesamt = count($pflicht);
         $erledigt = count(array_filter($pflicht, fn (array $item) => $item['status'] === self::STATUS_DONE));
 
@@ -190,7 +177,10 @@ class SetupChecklistService
     private function raeume(): array
     {
         $gesamt = Room::count();
-        $vorgabe = $gesamt === 0 ? 0 : Room::whereIn('room_number', self::VORGABE_RAEUME)->count();
+        // Die Vorgabenamen der Grundausstattung (TenantSeeder) sind erfunden.
+        // Stehen sie noch alle unverändert da, ist der Punkt nicht erledigt,
+        // auch wenn "Räume vorhanden" formal stimmt.
+        $vorgabe = $gesamt === 0 ? 0 : Room::whereIn('room_number', Grundausstattung::raumnummern())->count();
 
         $status = match (true) {
             $gesamt === 0 => self::STATUS_OPEN,
