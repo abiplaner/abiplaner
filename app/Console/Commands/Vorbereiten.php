@@ -17,7 +17,8 @@ use Illuminate\Support\Facades\Schema;
  *      Stand vor dem Update immer wiederherstellbar.
  *   3. Migrationen einspielen.
  *   4. Beim allerersten Start die Stammdaten (DatabaseSeeder), sonst die
- *      Hilfekapitel auffrischen (hilfe:einspielen lässt redigierte stehen).
+ *      Hilfekapitel auffrischen (hilfe:einspielen lässt redigierte stehen)
+ *      und die bayernweiten Termine abgleichen (termine:einspielen).
  *   5. Einmal täglich eine automatische Sicherung.
  *
  * Die Schule selbst legt der Einrichtungsassistent an.
@@ -68,6 +69,9 @@ class Vorbereiten extends Command
             $this->call('db:seed', ['--force' => true]);
         } else {
             $this->call('hilfe:einspielen');
+            // Neue Schuljahre und Berichtigungen aus database/data/termine.
+            // Ein Fehler darin meldet der Befehl selbst; der Start geht weiter.
+            $this->call('termine:einspielen');
         }
 
         if ($hatSchule && ! $this->heuteSchonGesichert()) {

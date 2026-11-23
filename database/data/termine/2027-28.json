@@ -1,0 +1,68 @@
+{
+    "schuljahr": "2027/28",
+    "stand": "2026-11-23",
+    "quellen": [
+        "Ferien: BayMBl. 2022 Nr. 747 (Ferienordnung 2024/25 bis 2029/30)",
+        "Abitur 2028: BayMBl. 2026 Nr. 347 vom 02.09.2026 (Bekanntmachung vom 28.07.2026, Az. VI.5-BS5500.0/290/2)",
+        "Feiertage: aus dem Osterdatum gerechnet (Ostern 2028 = 16.04.)"
+    ],
+    "hinweise": [
+        "Noch ohne die Fristen der Oberstufe (Kurswahl, Zeugnisse, Festlegung der Prüfungsfächer, Seminararbeit, Bewerber, Vergabeverfahren): Sie folgen, sobald der ISB-Terminplaner 2027/28 vorliegt.",
+        "Christi Himmelfahrt (25.05.2028) liegt in der ersten Kolloquiumswoche; an diesem Tag legt die Grundausstattung keine Zeitslots an."
+    ],
+    "abitur": {
+        "jahr": 2028,
+        "name": "Abitur 2028",
+        "kolloquium": [["2028-05-22", "2028-05-26"], ["2028-05-29", "2028-06-02"]],
+        "schriftlich": [
+            {"datum": "2028-04-26", "titel": "Schriftliche Abiturprüfung Deutsch", "slots": [40]},
+            {"datum": "2028-04-28", "titel": "Schriftliche Abiturprüfung Englisch (gA/eA)", "slots": [50, 51]},
+            {"datum": "2028-05-03", "titel": "Schriftliche Abiturprüfung Mathematik", "slots": [60]},
+            {"datum": "2028-05-04", "titel": "Schriftliche Abiturprüfung Französisch (gA/eA)", "slots": [70, 71]},
+            {"datum": "2028-05-09", "titel": "Schriftliche Abiturprüfung Biologie (gA/eA)", "slots": [10, 11]},
+            {"datum": "2028-05-10", "titel": "Schriftliche Abiturprüfung Physik (gA/eA)", "slots": [20, 21]},
+            {"datum": "2028-05-11", "titel": "Schriftliche Abiturprüfung Chemie (gA/eA)", "slots": [30, 31]},
+            {"datum": "2028-05-15", "titel": "Schriftliche Abiturprüfung alle weiteren Fächer (gA)", "slots": [80, 81, 82, 84]},
+            {"datum": "2028-05-17", "titel": "Schriftliche Abiturprüfung alle weiteren Fächer (eA)", "slots": [90, 91, 92, 94, 95, 96, 97]}
+        ]
+    },
+    "termine": [
+        {"art": "ferien", "titel": "Sommerferien", "von": "2027-08-02", "bis": "2027-09-13"},
+        {"art": "unterrichtsbeginn", "titel": "Beginn des stundenplanmäßigen Unterrichts", "von": "2027-09-14"},
+        {"art": "feiertag", "titel": "Tag der Deutschen Einheit", "von": "2027-10-03"},
+        {"art": "feiertag", "titel": "Reformationstag", "von": "2027-10-31"},
+        {"art": "feiertag", "titel": "Allerheiligen", "von": "2027-11-01"},
+        {"art": "ferien", "titel": "Herbstferien", "von": "2027-11-02", "bis": "2027-11-05"},
+        {"art": "feiertag", "titel": "Buß- und Bettag", "von": "2027-11-17"},
+        {"art": "ferien", "titel": "Weihnachtsferien", "von": "2027-12-24", "bis": "2028-01-07"},
+        {"art": "freier_tag", "titel": "Heiligabend", "von": "2027-12-24"},
+        {"art": "feiertag", "titel": "1. Weihnachtstag", "von": "2027-12-25"},
+        {"art": "feiertag", "titel": "2. Weihnachtstag", "von": "2027-12-26"},
+        {"art": "freier_tag", "titel": "Silvester", "von": "2027-12-31"},
+        {"art": "feiertag", "titel": "Neujahr", "von": "2028-01-01"},
+        {"art": "feiertag", "titel": "Heilige Drei Könige", "von": "2028-01-06"},
+        {"art": "praktisch", "titel": "Frühester Beginn praktische Prüfungen Sport", "von": "2028-01-24",
+            "beschreibung": "Praktische Prüfungen im Fach Sport werden nicht vor diesem Tag durchgeführt (BayMBl. 2026 Nr. 347, Nr. 1.3)."},
+        {"art": "gedenktag", "titel": "Tag des Gedenkens an die Opfer des Nationalsozialismus", "von": "2028-01-27"},
+        {"art": "freier_tag", "titel": "Rosenmontag", "von": "2028-02-28"},
+        {"art": "ferien", "titel": "Frühjahrsferien", "von": "2028-02-28", "bis": "2028-03-03"},
+        {"art": "praktisch", "titel": "Frühester Beginn praktische Prüfungen Musik", "von": "2028-03-13",
+            "beschreibung": "Praktische Prüfungen im Fach Musik werden nicht vor diesem Tag durchgeführt (BayMBl. 2026 Nr. 347, Nr. 1.3)."},
+        {"art": "ferien", "titel": "Osterferien", "von": "2028-04-10", "bis": "2028-04-21"},
+        {"art": "feiertag", "titel": "Karfreitag", "von": "2028-04-14"},
+        {"art": "freier_tag", "titel": "Ostersonntag", "von": "2028-04-16"},
+        {"art": "feiertag", "titel": "Ostermontag", "von": "2028-04-17"},
+        {"art": "feiertag", "titel": "Maifeiertag", "von": "2028-05-01"},
+        {"art": "ausweichtermin", "titel": "Zentraler Ausweichtermin schriftliche Abiturprüfung", "von": "2028-05-19",
+            "beschreibung": "BayMBl. 2026 Nr. 347, Nr. 1.1"},
+        {"art": "feiertag", "titel": "Christi Himmelfahrt", "von": "2028-05-25"},
+        {"art": "freier_tag", "titel": "Pfingstsonntag", "von": "2028-06-04"},
+        {"art": "feiertag", "titel": "Pfingstmontag", "von": "2028-06-05"},
+        {"art": "ferien", "titel": "Pfingstferien", "von": "2028-06-06", "bis": "2028-06-16"},
+        {"art": "feiertag", "titel": "Fronleichnam", "von": "2028-06-15"},
+        {"art": "zusatzpruefung", "titel": "Mündliche Zusatzprüfungen", "von": "2028-06-23",
+            "beschreibung": "Bis spätestens Freitag, 23. Juni 2028 abzuschließen; erst nach Bekanntgabe der Ergebnisse der fünf Abiturprüfungsfächer. Die genauen Termine setzt der Prüfungsausschuss fest (BayMBl. 2026 Nr. 347, Nr. 1.4)."},
+        {"art": "entlassung", "titel": "Ausstellung und Aushändigung des Abiturzeugnisses", "von": "2028-06-30",
+            "beschreibung": "Entlassung Abiturientinnen und Abiturienten (BayMBl. 2026 Nr. 347)."}
+    ]
+}

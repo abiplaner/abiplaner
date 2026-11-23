@@ -8,15 +8,17 @@ use App\Models\WrittenExamSlot;
 use App\Models\Subject;
 
 /**
- * Seeder für die schriftlichen Abitur-Prüfungsslots (jahresunabhängig)
- * und die konkreten Termine für das Abitur 2026.
+ * Seeder für die schriftlichen Abitur-Prüfungsslots (jahresunabhängig).
  *
  * Grundlage: KMS Allgemeine Bestimmungen Abiturprüfung 2026, Anlage 1
  *
  * Struktur:
- *   written_exam_slots          → 25 Slots (Zeiten + Fächer, jahresunabhängig)
+ *   written_exam_slots          → 23 Slots (Zeiten + Fächer, jahresunabhängig)
  *   written_exam_slot_subjects  → Fach-Zuordnungen
- *   written_exam_year_dates     → Konkrete Termine für 2026
+ *
+ * Die Prüfungstage je Jahr kommen aus database/data/termine (BayernTermine),
+ * adressiert über sort_order. Läuft nur beim ersten Start: Er leert die
+ * Tabellen, auch written_exam_year_dates.
  *
  * WICHTIG: Russisch (Ru) gibt es nur auf grundlegendem Niveau (gA).
  *          Deutsch (D) und Mathematik (M) gibt es schriftlich nur als eA.
@@ -118,9 +120,6 @@ class WrittenExamSlotsSeeder extends Seeder
         // ----------------------------------------------------------------
         // Slots anlegen und Fächer zuordnen
         // ----------------------------------------------------------------
-        /** @var array<string, int> $slotIdsBySort sort_order => slot_id */
-        $slotIdsBySort = [];
-
         foreach ($slotDefinitions as [$name, $level, $start, $end, $sort, $codes]) {
             $slot = WrittenExamSlot::create([
                 'name'              => $name,
@@ -129,8 +128,6 @@ class WrittenExamSlotsSeeder extends Seeder
                 'end_time'          => $end,
                 'sort_order'        => $sort,
             ]);
-
-            $slotIdsBySort[$sort] = $slot->id;
 
             $subjectIdsToAttach = collect($codes)
                 ->map(fn ($code) => $lookup($code))
@@ -149,48 +146,9 @@ class WrittenExamSlotsSeeder extends Seeder
             $this->command->warn('⚠ Folgende Fach-Codes wurden nicht gefunden: ' . implode(', ', array_unique($missing)));
         }
 
-        // ----------------------------------------------------------------
-        // Konkrete Termine für Abitur 2026
-        // ----------------------------------------------------------------
-        $this->command->info('Erstelle Jahrestermine für Abitur 2026...');
-
-        // Mapping: sort_order[] => Datum
-        $yearDates2026 = [
-            '2026-04-22' => [10, 11],       // Bio gA + eA
-            '2026-04-23' => [20, 21],       // Ph gA + eA
-            '2026-04-24' => [30, 31],       // C gA + eA
-            '2026-04-28' => [40],           // D eA
-            '2026-04-30' => [50, 51],       // E gA + eA
-            '2026-05-06' => [60],           // M eA
-            '2026-05-08' => [70, 71],       // F gA + eA
-            '2026-05-11' => [80, 81, 82, 84], // Sammeltag gA
-            '2026-05-13' => [90, 91, 92, 94, 95, 96, 97], // Sammeltag eA
-        ];
-
-        $dateCount = 0;
-        $now = now();
-
-        foreach ($yearDates2026 as $date => $sorts) {
-            foreach ($sorts as $sort) {
-                $slotId = $slotIdsBySort[$sort] ?? null;
-                if ($slotId === null) {
-                    $this->command->warn("⚠ Kein Slot für sort_order={$sort} gefunden");
-                    continue;
-                }
-                DB::table('written_exam_year_dates')->insert([
-                    'exam_year'            => 2026,
-                    'written_exam_slot_id' => $slotId,
-                    'exam_date'            => $date,
-                    'created_at'           => $now,
-                    'updated_at'           => $now,
-                ]);
-                $dateCount++;
-            }
-        }
-
-        $this->command->info("✅ {$dateCount} Jahrestermine für 2026 angelegt");
-        $this->command->info('');
-        $this->command->info('Hinweis: Ausweichtermin Fr 15.05.2026 ist kein eigener Eintrag –');
-        $this->command->info('         er wird schulintern koordiniert falls ein Termin ausfällt.');
+        // Die Prüfungstage je Jahr (`written_exam_year_dates`) stehen seit
+        // 23.11.2026 in database/data/termine/*.json und kommen über
+        // BayernTermineSeeder bzw. `termine:einspielen` — dort über
+        // sort_order, nicht über die ID.
     }
 }
