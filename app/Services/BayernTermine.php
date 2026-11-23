@@ -28,10 +28,11 @@ use RuntimeException;
  * gleichem Titel im selben Schuljahr wird übernommen (bekommt den Schlüssel).
  *
  * Prüfungszeiträume legt der Abgleich nur auf Wunsch an (Ersteinrichtung),
- * und nur bis zum laufenden Schuljahr: Ein neuer Zeitraum würde sofort zum
+ * und nur den des laufenden Schuljahres: Ein neuer Zeitraum würde sofort zum
  * aktuellen (CurrentExamPeriodService nimmt den jüngsten) und einer Schule
  * mitten im Jahr die Planung unter den Füßen wegziehen. Für später gibt es
- * zeitraumVorschlag(), der die Maske „Neuer Prüfungszeitraum" vorbelegt.
+ * zeitraumVorschlag(): Daraus legt der Schuljahreswechsel den neuen Zeitraum
+ * an (YearChangeWizardService::preflight/start).
  */
 class BayernTermine
 {
@@ -258,10 +259,10 @@ class BayernTermine
                 $bericht['warnungen'] = array_merge($bericht['warnungen'], $this->pruefen($jahr));
                 $this->gleicheKalenderAb($jahr, $bericht);
                 $this->gleicheSchriftlicheTermineAb($jahr, $bericht);
+            }
 
-                if ($mitZeitraeumen) {
-                    $this->legeZeitraumAn($jahr, $bericht);
-                }
+            if ($mitZeitraeumen) {
+                $this->legeZeitraumAn($bericht);
             }
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -420,18 +421,26 @@ class BayernTermine
     }
 
     /**
-     * @param array<string, mixed> $jahr
+     * Genau ein Prüfungszeitraum für eine neue Installation: das Abitur des
+     * laufenden Schuljahres. Vergangene Jahrgänge braucht eine neue Schule
+     * nicht (Wilfried, 23.11.2026) — sie stünden nur als „In Planung" herum.
+     * Fehlt die Datei des laufenden Schuljahres, das jüngste ältere Abitur,
+     * damit die Einrichtung überhaupt einen Zeitraum hat.
+     *
      * @param array{neu: int, geaendert: int, geloescht: int, unveraendert: int, schriftlich: int, zeitraeume: list<string>, warnungen: list<string>} $bericht
      */
-    private function legeZeitraumAn(array $jahr, array &$bericht): void
+    private function legeZeitraumAn(array &$bericht): void
     {
-        $abitur = $jahr['abitur'];
+        $laufend = (int) substr(SchoolYear::current(), 0, 4);
+        $abitur = null;
 
-        if ($abitur === null || (int) substr($jahr['schuljahr'], 0, 4) > (int) substr(SchoolYear::current(), 0, 4)) {
-            return;
+        foreach ($this->jahre() as $jahr) {
+            if ($jahr['abitur'] !== null && (int) substr($jahr['schuljahr'], 0, 4) <= $laufend) {
+                $abitur = $jahr['abitur'];
+            }
         }
 
-        if (DB::table('exam_periods')->where('year', $abitur['jahr'])->exists()) {
+        if ($abitur === null || DB::table('exam_periods')->where('year', $abitur['jahr'])->exists()) {
             return;
         }
 
@@ -441,7 +450,7 @@ class BayernTermine
     }
 
     /**
-     * Vorbelegung für „Neuer Prüfungszeitraum": das erste Abitur aus den
+     * Der nächste Zeitraum für den Schuljahreswechsel: das erste Abitur aus den
      * Dateien, das jünger ist als alle angelegten Zeiträume.
      *
      * @return array{name: string, year: int, week_1_start: string, week_1_end: string, week_2_start: string, week_2_end: string}|null

@@ -10,8 +10,8 @@ use Illuminate\Database\Seeder;
  *
  * Ersetzt GlobalCalendarEventsSeeder, ExamPeriodSeeder, Abitur2027Seeder und
  * Kalender202627Seeder. Die Daten stehen jetzt in database/data/termine/;
- * dieser Seeder legt zusätzlich die Prüfungszeiträume bis zum laufenden
- * Schuljahr an. Spätere Starts gleichen über `termine:einspielen` ab.
+ * dieser Seeder legt zusätzlich den Prüfungszeitraum des laufenden
+ * Schuljahres an (vergangene Jahrgänge nicht). Spätere Starts gleichen über `termine:einspielen` ab.
  *
  * Muss nach WrittenExamSlotsSeeder laufen — die Prüfungstage hängen am
  * Slot-Katalog.
