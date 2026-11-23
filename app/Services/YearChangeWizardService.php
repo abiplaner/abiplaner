@@ -106,19 +106,45 @@ class YearChangeWizardService
      */
     public function preflight(): array
     {
-        $target = ExamPeriod::orderByDesc('year')->orderByDesc('created_at')->first();
+        $errors = [];
+        $warnings = [];
+
+        $newest = ExamPeriod::orderByDesc('year')->orderByDesc('created_at')->first();
+        $vorschlag = $newest !== null ? app(BayernTermine::class)->zeitraumVorschlag() : null;
+
+        // Seit 23.11.2026: Die neue Periode legt der Wechsel selbst an, aus den
+        // Termindateien (BayernTermine). Ziel ist dann ein noch ungespeichertes
+        // Modell; start() speichert es. Freigegeben erst nach den Kolloquien
+        // des laufenden Jahrgangs — sonst stünde der Wechsel schon im Herbst an.
+        // Ausnahme: Ein schon angelegter, noch leerer jüngster Zeitraum über
+        // einem älteren ist das Ziel eines noch nicht gelaufenen Wechsels.
+        $leeresZiel = $newest !== null
+            && !Student::where('exam_period_id', $newest->id)->exists()
+            && ExamPeriod::where('year', '<', $newest->year)->exists();
+
+        if ($newest !== null && $vorschlag !== null && !$leeresZiel) {
+            $source = $newest;
+            $target = new ExamPeriod($vorschlag);
+
+            if (now()->startOfDay()->lte($newest->week_2_end)) {
+                $errors[] = 'Der Wechsel zum ' . $target->name . ' ist erst nach den Kolloquien des '
+                    . $newest->name . ' möglich (ab ' . $newest->week_2_end->copy()->addDay()->format('d.m.Y') . ').';
+            }
+
+            return compact('target', 'source', 'errors', 'warnings');
+        }
+
+        // Bestand: Die neue Periode wurde schon angelegt (früher zentral).
+        $target = $newest;
         $source = $target !== null
             ? ExamPeriod::where('year', '<', $target->year)->orderByDesc('year')->first()
             : null;
 
-        $errors = [];
-        $warnings = [];
-
         if ($target === null) {
-            $errors[] = 'Es existiert keine Prüfungsperiode. Bitte zuerst die neue Periode anlegen.';
+            $errors[] = 'Es existiert keine Prüfungsperiode.';
         } elseif ($source === null) {
-            $errors[] = 'Es existiert keine ältere Periode unterhalb von "' . $target->name . '" — '
-                . 'die neue Periode (z. B. "Abitur ' . ($target->year + 1) . '") muss zuerst zentral angelegt werden.';
+            $errors[] = 'Die Termine für das Abitur ' . ($target->year + 1) . ' sind in diesem Programmstand noch '
+                . 'nicht enthalten. Sie kommen mit einem Update, sobald das Kultusministerium sie bekannt gibt.';
         } else {
             $targetStudents = Student::where('exam_period_id', $target->id)->count();
             if ($targetStudents > 0) {
@@ -146,6 +172,18 @@ class YearChangeWizardService
 
         if ($preflight['errors'] !== [] || $preflight['target'] === null || $preflight['source'] === null) {
             throw new \RuntimeException(implode(' ', $preflight['errors']) ?: 'Voraussetzungen nicht erfüllt.');
+        }
+
+        // Neue Periode aus den Termindateien (siehe preflight()).
+        if (!$preflight['target']->exists) {
+            $preflight['target']->save();
+
+            ActivityLogger::log(
+                'exam_period_created',
+                'ExamPeriod',
+                $preflight['target']->id,
+                "Prüfungszeitraum '{$preflight['target']->name}' beim Schuljahreswechsel angelegt"
+            );
         }
 
         $state = [

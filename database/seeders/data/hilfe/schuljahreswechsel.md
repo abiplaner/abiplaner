@@ -10,10 +10,15 @@ Der Assistent führt in **neun Schritten** vom alten in den neuen Jahrgang.
 
 ## Vorher
 
-Die neue Prüfungsperiode muss **zentral bereits angelegt** sein — sonst bricht
-Schritt 1 ab. Ziel ist immer die neueste Periode, Quelle die nächstniedrigere.
-Enthält die Zielperiode schon Schüler, warnt der Assistent. In der Archivansicht
-ist er gesperrt.
+Die neue Prüfungsperiode legen Sie **nicht** selbst an: Der Assistent nimmt sie
+beim Start aus den bayernweiten Terminen, die mit dem Programm kommen
+(Kolloquiumswochen laut Bekanntmachung des Kultusministeriums). Quelle ist der
+laufende Jahrgang.
+
+Freigegeben ist der Wechsel erst **nach den Kolloquien** des laufenden
+Jahrgangs; vorher nennt die Seite den Tag, ab dem es geht. Fehlen die Termine
+des nächsten Abiturs noch, kommen sie mit einem Programm-Update. In der
+Archivansicht ist der Assistent gesperrt.
 
 ## Die neun Schritte
 

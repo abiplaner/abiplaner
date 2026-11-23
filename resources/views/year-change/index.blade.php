@@ -22,16 +22,6 @@
     <div class="py-12">
         <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-            @if (session('success'))
-                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded" role="alert">
-                    {{ session('success') }}
-                </div>
-            @endif
-            @if (session('error'))
-                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded" role="alert">
-                    {{ session('error') }}
-                </div>
-            @endif
             @if ($errors->any())
                 <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded" role="alert">
                     <ul class="list-disc pl-5">
@@ -79,9 +69,6 @@
                                     <li>{{ $error }}</li>
                                 @endforeach
                             </ul>
-                            <p class="text-xs text-red-600 mt-2">
-                                Die neue Prüfungsperiode wird wie bisher zentral angelegt (Dashboard → Prüfungszeiträume).
-                            </p>
                         </div>
                     @else
                         <div class="flex items-center gap-4 p-4 bg-blue-50 rounded-lg mb-4">
@@ -94,6 +81,14 @@
                                 <div class="text-xs text-gray-500">Neu</div>
                                 <div class="font-semibold text-gray-800">{{ $preflight['target']->name }}</div>
                             </div>
+                            @unless ($preflight['target']->exists)
+                                <div class="text-xs text-gray-600 ml-2">
+                                    Wird beim Start angelegt — Kolloquium
+                                    {{ $preflight['target']->week_1_start->format('d.m.') }}–{{ $preflight['target']->week_1_end->format('d.m.') }}
+                                    und {{ $preflight['target']->week_2_start->format('d.m.') }}–{{ $preflight['target']->week_2_end->format('d.m.Y') }}
+                                    laut Bekanntmachung des Kultusministeriums.
+                                </div>
+                            @endunless
                         </div>
 
                         @foreach ($preflight['warnings'] as $warning)
