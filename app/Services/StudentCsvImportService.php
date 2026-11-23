@@ -798,7 +798,7 @@ class StudentCsvImportService
 
             $writtenExamDateId = null;
             if ($examType === 'written') {
-                $writtenExamDateId = $this->findWrittenExamDateId($subject->id, $course->level, $schoolId);
+                $writtenExamDateId = $this->findWrittenExamDateId($subject->id, $course->level, (int) $examPeriod->year);
 
                 if (!$writtenExamDateId) {
                     $levelDisplay = $course->level === 'erhoeht' ? 'eA' : 'gA';
@@ -929,10 +929,8 @@ class StudentCsvImportService
      * Findet den passenden written_exam_year_date für Fach + Level + Jahr.
      * Sucht über WrittenExamSlot → WrittenExamYearDate.
      */
-    private function findWrittenExamDateId(int $subjectId, string $level, string $schoolId): ?int
+    private function findWrittenExamDateId(int $subjectId, string $level, int $examYear): ?int
     {
-        // Exam-Jahr aus der aktuellen ExamPeriod bestimmen
-        // (schoolId-unabhängig, da zentrale Tabelle)
         $slot = WrittenExamSlot::whereHas('subjects', fn ($q) => $q->where('subject_id', $subjectId))
             ->where('requirement_level', $level)
             ->first();
@@ -949,9 +947,11 @@ class StudentCsvImportService
             return null;
         }
 
-        // Neueste Jahrestermin-Eintrag für diesen Slot holen
+        // Der Termin im Jahr des Prüfungszeitraums. Bis 23.11.2026 war es der
+        // neueste Termin überhaupt — das ging nur gut, solange die Termine des
+        // Folgejahres fehlten (seit termine:einspielen stehen sie oft schon da).
         $yearDate = WrittenExamYearDate::where('written_exam_slot_id', $slot->id)
-            ->orderBy('exam_year', 'desc')
+            ->where('exam_year', $examYear)
             ->first();
 
         return $yearDate?->id;

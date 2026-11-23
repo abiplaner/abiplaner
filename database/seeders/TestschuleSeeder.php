@@ -878,8 +878,11 @@ class TestschuleSeeder extends Seeder
             return $this->terminCache[$schluessel] = null;
         }
 
-        $yearDate = WrittenExamYearDate::query()            ->where('written_exam_slot_id', $slot->id)
-            ->orderByDesc('exam_year')
+        // Das Jahr des Prüfungszeitraums, nicht das neueste: Die Termindateien
+        // bringen das Folgejahr oft schon mit (BayernTermine).
+        $yearDate = WrittenExamYearDate::query()
+            ->where('written_exam_slot_id', $slot->id)
+            ->where('exam_year', (int) DB::table('exam_periods')->where('id', $this->examPeriodId)->value('year'))
             ->first();
 
         return $this->terminCache[$schluessel] = $yearDate instanceof WrittenExamYearDate ? (int) $yearDate->id : null;
