@@ -1,0 +1,12 @@
+{
+  "name": "abiplaner-desktop",
+  "private": true,
+  "description": "Desktop-Hülle (Tauri 2) für Abiplaner",
+  "license": "AGPL-3.0-or-later",
+  "scripts": {
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.6"
+  }
+}

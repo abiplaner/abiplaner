@@ -1,0 +1,1 @@
+{"default":{"identifier":"default","description":"Nur die eingebaute Startseite darf die App-Befehle aufrufen; die Laravel-Seiten (http://127.0.0.1) haben keinen Zugriff.","local":true,"windows":["main"],"permissions":["core:default"]}}

@@ -1,0 +1,78 @@
+*.log
+.DS_Store
+.env
+.env.backup
+.env.production
+.phpactor.json
+.phpunit.result.cache
+/.fleet
+/.idea
+/.nova
+/.phpunit.cache
+/.vscode
+/.zed
+/auth.json
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail
+/storage/tenant*
+/storage/coverage
+/vendor
+Homestead.json
+Homestead.yaml
+Thumbs.db
+
+/backups
+
+# Docker Compose Override für lokale Entwicklung
+docker-compose.override.yml
+
+# Arbeitsanweisungen für Claude — bleiben pro Arbeitsplatz/Server lokal
+CLAUDE.md
+*.sql
+# Ausnahme: das Basisschema gehoert zum Code (database/migrations/…_basisschema.php)
+!database/schema/basis.sql
+*.backup*
+
+# Instanz-Konfiguration fuer deploy.sh (production/staging) — gehoert zur
+# Installation, nicht zum Code.
+.deploy-env
+
+# SQLite-Datei, die entsteht, wenn ein Testlauf mit DB_CONNECTION=sqlite
+# und DB_DATABASE=abiplaner faellt (CI-Nachbau) — kein Projektbestandteil.
+/abiplaner
+
+# --- Sicherheits-Ausschlüsse (ergänzt 2026-11-10) ---
+.env.*
+!.env.example
+!.env.*.example
+!.env.default
+!.env.testing
+*backup*.sql
+*dump*.sql
+*.sql.gz
+*.dump
+*.bak
+*.backup
+*.old
+.claude/settings.local.json
+.venv/
+id_rsa*
+id_ed25519*
+*.p12
+*.kdbx
+node_modules/
+vendor/
+
+# Lokale Edition: Build-Ergebnisse und heruntergeladene FrankenPHP-Binaries
+/dist
+/lokal/.cache
+
+# Desktop-App (Tauri): Bauergebnisse und Laufzeit-Cache
+/desktop/build
+/desktop/.cache
+/desktop/node_modules
+/desktop/src-tauri/target

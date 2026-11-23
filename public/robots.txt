@@ -1,0 +1,8 @@
+User-agent: *
+Disallow: /calendar/
+Disallow: /admin/
+Disallow: /login
+Disallow: /password/
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /backups/

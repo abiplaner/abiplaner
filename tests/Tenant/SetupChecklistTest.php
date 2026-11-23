@@ -1,0 +1,222 @@
+<?php
+
+namespace Tests\Tenant;
+
+use App\Models\User;
+use App\Services\SetupChecklistService;
+use Database\Seeders\TestschuleSeeder;
+use Illuminate\Console\Command;
+
+/**
+ * Modul 6.2 – Einrichtungsstand einer Schule.
+ *
+ * Die Checkliste ist die erste Seite, die ein neuer Anwender sieht. Sie muss
+ * zwei Dinge richtig treffen: bei einer frisch angelegten Schule das Fehlende
+ * benennen, und bei einer eingerichteten Schule nicht weiter mahnen.
+ */
+class SetupChecklistTest extends TenantTestCase
+{
+    /** Zentral angelegtes Testkonto; wird in jedem Test wieder entfernt. */
+    private const PLANNER_EMAIL = 'planer-9999@test.invalid';
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Reste eines abgebrochenen Laufs: users ist zentral und wird vom
+        // Aufräumen der Testschule nicht miterfasst.
+        User::where('email', self::PLANNER_EMAIL)->delete();
+    }
+
+    public function test_frische_schule_meldet_die_offenen_bausteine(): void
+    {
+        $school = $this->createTestSchool();
+
+
+        try {
+            $items = $this->checkliste()->items();
+            $progress = $this->checkliste()->progress();
+        } finally {
+        }
+
+        $status = $this->statusNachSchluessel($items);
+
+        // Aus der Grundausstattung des TenantSeeders vorhanden …
+        $this->assertSame(SetupChecklistService::STATUS_DONE, $status['zeitslots']);
+
+        // … aber mit den erfundenen Vorgabe-Raumnummern, also nicht fertig.
+        $this->assertSame(
+            SetupChecklistService::STATUS_PARTIAL,
+            $status['raeume'],
+            'Vorgabe-Raumnummern aus dem TenantSeeder dürfen nicht als erledigt gelten.'
+        );
+
+        // Alles, was die Schule selbst einspielen muss, fehlt noch.
+        foreach (['lehrkraefte', 'schueler', 'kurse', 'pruefungszuordnungen'] as $key) {
+            $this->assertSame(SetupChecklistService::STATUS_OPEN, $status[$key], "{$key} sollte offen sein.");
+        }
+
+        $this->assertGreaterThan(0, $progress['offen']);
+        $this->assertLessThan(100, $progress['prozent']);
+    }
+
+    public function test_eingerichtete_schule_meldet_die_eigenen_bausteine_als_erledigt(): void
+    {
+        $school = $this->createTestSchool();
+
+
+        try {
+            $seeder = new TestschuleSeeder();
+            $seeder->setCommand($this->stilleAusgabe());
+            $seeder->run();
+
+            $items = $this->checkliste()->items();
+        } finally {
+        }
+
+        $eigene = array_filter(
+            $items,
+            fn (array $item) => $item['scope'] === SetupChecklistService::SCOPE_SCHULE && $item['required']
+        );
+
+        foreach ($eigene as $item) {
+            $this->assertSame(
+                SetupChecklistService::STATUS_DONE,
+                $item['status'],
+                "Baustein „{$item['title']}\" sollte nach dem Testschul-Seeder erledigt sein ({$item['detail']})."
+            );
+        }
+    }
+
+    public function test_zugaenge_werden_aus_der_zentralen_datenbank_gelesen(): void
+    {
+        $school = $this->createTestSchool();
+
+
+        try {
+            $vorher = $this->statusNachSchluessel($this->checkliste()->items())['benutzerkonten'];
+
+            User::create([
+                'name' => 'Testplaner',
+                'email' => self::PLANNER_EMAIL,
+                'password' => 'irrelevant-fuer-den-test',
+                'role' => 'planner',
+                'school_id' => $school->getKey(),
+                'is_active' => true,
+            ]);
+
+            $nachher = $this->statusNachSchluessel($this->checkliste()->items())['benutzerkonten'];
+        } finally {
+            User::where('email', self::PLANNER_EMAIL)->delete();
+        }
+
+        $this->assertSame(SetupChecklistService::STATUS_OPEN, $vorher);
+        $this->assertSame(
+            SetupChecklistService::STATUS_DONE,
+            $nachher,
+            'Konten liegen zentral — die Abfrage muss auch im Tenant-Kontext dorthin gehen.'
+        );
+    }
+
+    /**
+     * Die Seite selbst — Route, Controller, View und Partial.
+     *
+     * Die Prüfungen darüber testen nur den Service; ein Tippfehler im Blade
+     * fiele dort nicht auf, und die Einrichtungsseite ist ausgerechnet die
+     * erste, die ein neuer Anwender zu sehen bekommt.
+     */
+    public function test_einrichtungsseite_wird_ausgeliefert(): void
+    {
+        $school = $this->createTestSchool();
+
+        $planner = User::factory()->create([
+            'email' => self::PLANNER_EMAIL,
+            'role' => 'planner',
+            'school_id' => $school->getKey(),
+        ]);
+
+
+        try {
+            $response = $this->actingAs($planner)->get(route('setup.index'));
+
+            $response->assertOk();
+            $response->assertViewIs('setup.index');
+            $response->assertViewHas('progress');
+            $response->assertSee('Von der Schule zu erledigen');
+            $response->assertSee('Zentral vom Administrator');
+            $response->assertSee('Lehrkräfte');
+        } finally {
+            User::where('email', self::PLANNER_EMAIL)->delete();
+        }
+    }
+
+    /**
+     * Jede hinterlegte Route muss es auch geben.
+     *
+     * Beim ersten Durchgang zeigten zwei Zeilen auf die falsche Seite — die
+     * Zeitslots auf die Stundenraster-Verwaltung, die Sitzvorlagen auf die
+     * Raumliste. Beides existierende Routen, der Fehler fiel also erst beim
+     * Durchklicken auf. Diese Probe fängt wenigstens Tippfehler und später
+     * entfernte Routen ab.
+     */
+    public function test_alle_verweise_zeigen_auf_vorhandene_routen(): void
+    {
+        $school = $this->createTestSchool();
+
+
+        try {
+            $items = $this->checkliste()->items();
+        } finally {
+        }
+
+        foreach ($items as $item) {
+            if ($item['route'] === null) {
+                continue;
+            }
+
+            $this->assertTrue(
+                \Illuminate\Support\Facades\Route::has($item['route']),
+                "Baustein „{$item['title']}\" verweist auf die unbekannte Route {$item['route']}."
+            );
+        }
+    }
+
+    private function checkliste(): SetupChecklistService
+    {
+        return app(SetupChecklistService::class);
+    }
+
+    /**
+     * @param list<array{key: string, status: string}> $items
+     *
+     * @return array<string, string>
+     */
+    private function statusNachSchluessel(array $items): array
+    {
+        $status = [];
+
+        foreach ($items as $item) {
+            $status[$item['key']] = $item['status'];
+        }
+
+        return $status;
+    }
+
+    private function stilleAusgabe(): Command
+    {
+        return new class extends Command
+        {
+            public function info($string, $verbosity = null): void
+            {
+            }
+
+            public function warn($string, $verbosity = null): void
+            {
+            }
+
+            public function line($string, $style = null, $verbosity = null): void
+            {
+            }
+        };
+    }
+}

@@ -1,0 +1,35 @@
+# FrankenPHP-Konfiguration des Schulservers. HTTPS übernimmt ein vorgeschalteter
+# Proxy der Schule oder ABIPLANER_TLS (siehe compose.yaml); ohne beides läuft
+# der Container im Schulnetz auf http://<server>:8080.
+{
+	frankenphp
+	admin off
+	auto_https off
+}
+
+:8080 {
+	root * /app/public
+	encode zstd gzip
+
+	request_body {
+		max_size 20MB
+	}
+
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "geolocation=(), microphone=(), camera=()"
+		-Server
+		-X-Powered-By
+	}
+
+	# Versteckte Dateien (.env, .git …) nie ausliefern.
+	@versteckt {
+		path */.*
+		not path /.well-known/*
+	}
+	respond @versteckt 404
+
+	php_server
+}

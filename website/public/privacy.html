@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Abiplaner – Oberstufenplanung, zu Ende gedacht</title>
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+
+    <!-- Fonts: selbstgehostet via @fontsource/figtree in resources/css/app.css -->
+
+    <link rel="preload" as="style" href="/build/assets/app-BwFVw84C.css" /><link rel="modulepreload" as="script" href="/build/assets/app-Bwh7SvQ8.js" /><link rel="stylesheet" href="/build/assets/app-BwFVw84C.css" /><script type="module" src="/build/assets/app-Bwh7SvQ8.js"></script>
+    <style>
+        :root {
+            --accent: #2563eb;
+            --accent-700: #1d4ed8;
+            --accent-50: #eff6ff;
+            --ink: #0f172a;
+            --ink-2: #334155;
+            --muted: #64748b;
+            --line: #e2e8f0;
+            --line-2: #f1f5f9;
+            --bg: #f8fafc;
+        }
+        html, body { font-family: 'Figtree', ui-sans-serif, system-ui, sans-serif; color: var(--ink); }
+        body { background: #ffffff; }
+        .font-display { font-weight: 700; letter-spacing: -0.02em; }
+        .btn-primary { background: var(--accent); color: #fff; transition: background .15s; }
+        .btn-primary:hover { background: var(--accent-700); }
+        .chip { display: inline-flex; align-items: center; gap: .4rem; padding: .18rem .5rem; border-radius: .375rem; font-size: .72rem; font-weight: 500; }
+        .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .72rem; padding: .08rem .35rem; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: .28rem; color: var(--ink-2); background: #fff; }
+        .grid-lines { background-image: linear-gradient(to right, rgba(15,23,42,.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,.04) 1px, transparent 1px); background-size: 56px 56px; }
+        .app-card { background: #fff; border: 1px solid var(--line); border-radius: 10px; }
+        .nav-link { color: #334155; font-size: .875rem; font-weight: 500; }
+        .nav-link:hover { color: var(--accent); }
+        .row-hover:hover { background: #f8fafc; }
+        .dot { width: .5rem; height: .5rem; border-radius: 999px; display: inline-block; }
+        .tab { padding: .45rem .8rem; font-size: .82rem; color: #475569; border-bottom: 2px solid transparent; }
+        .tab.active { color: var(--accent); border-color: var(--accent); font-weight: 600; }
+        .lift { box-shadow: 0 1px 0 rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.04), 0 20px 40px -20px rgba(15,23,42,.18), 0 30px 60px -30px rgba(15,23,42,.12); }
+        .lift-sm { box-shadow: 0 8px 24px -12px rgba(15,23,42,.18), 0 1px 2px rgba(15,23,42,.05); }
+        .sticky-nav { position: sticky; top: 0; z-index: 50; backdrop-filter: saturate(180%) blur(10px); background: rgba(255,255,255,.85); border-bottom: 1px solid var(--line); }
+        .eyebrow { display: inline-flex; align-items: center; gap: .5rem; padding: .25rem .6rem; font-size: .72rem; font-weight: 600; color: var(--accent); background: var(--accent-50); border-radius: 999px; letter-spacing: .02em; }
+        .kicker { font-size: .72rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+        .step-num { width: 26px; height: 26px; border-radius: 999px; background: var(--accent); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; font-size: .78rem; flex-shrink: 0; }
+        .bar { background: var(--accent); border-radius: 2px; }
+        .bar-bg { background: #e2e8f0; border-radius: 2px; }
+        .av { width: 22px; height: 22px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: .66rem; font-weight: 600; color: #fff; flex-shrink: 0; }
+        .feature:hover .lift-target { transform: translateY(-2px); }
+        .lift-target { transition: transform .2s ease; }
+        .c-de { background: #3b82f6 } .c-ma { background: #f59e0b } .c-en { background: #10b981 }
+        .c-ph { background: #8b5cf6 } .c-ch { background: #ef4444 } .c-ge { background: #0ea5e9 }
+        .c-sp { background: #ec4899 } .c-bi { background: #14b8a6 }
+        footer a:hover { color: #fff; }
+        details summary::-webkit-details-marker { display: none; }
+        details[open] summary .rotate-toggle { transform: rotate(45deg); }
+        .rotate-toggle { transition: transform .15s; }
+    </style>
+</head>
+<body class="antialiased text-slate-700">
+
+<!-- ====== NAV ====== -->
+<nav x-data="{ open: false }" class="sticky-nav">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16 items-center">
+            <!-- Logo -->
+            <div class="flex items-center gap-8">
+                <a href="/" class="flex items-center gap-2.5">
+                    <img src="/assets/landing/logo.png" alt="AbiPlaner Logo" class="h-9 w-9 object-contain">
+                    <span class="font-display text-lg" style="color:var(--ink)">AbiPlaner</span>
+                </a>
+                <!-- Desktop links -->
+                <div class="hidden md:flex items-center gap-1">
+                    <a href="/#features" class="nav-link px-3 py-2 rounded-md hover:bg-slate-50">Funktionen</a>
+                    <a href="/#modules"   class="nav-link px-3 py-2 rounded-md hover:bg-slate-50">Module</a>
+                    <a href="/installation" class="nav-link px-3 py-2 rounded-md hover:bg-slate-50">Download</a>
+                    <a href="/#faq"       class="nav-link px-3 py-2 rounded-md hover:bg-slate-50">FAQ</a>
+                </div>
+            </div>
+            <!-- Desktop CTA -->
+            <div class="hidden md:flex items-center gap-2">
+            </div>
+            <!-- Mobile button -->
+            <button @click="open = !open" type="button" class="md:hidden inline-flex items-center justify-center p-2 rounded-md text-slate-500 hover:bg-slate-100">
+                <svg x-show="!open" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                <svg x-show="open" style="display:none" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+    </div>
+    <!-- Mobile menu -->
+    <div x-show="open" style="display:none" class="md:hidden bg-white border-b border-slate-200">
+        <div class="px-4 pt-2 pb-4 space-y-1">
+            <a href="/#features"     class="block px-3 py-2 rounded-md text-sm font-medium text-slate-700 hover:bg-slate-50">Funktionen</a>
+            <a href="/#modules"      class="block px-3 py-2 rounded-md text-sm font-medium text-slate-700 hover:bg-slate-50">Module</a>
+            <a href="/installation" class="block px-3 py-2 rounded-md text-sm font-medium text-slate-700 hover:bg-slate-50">Download</a>
+            <a href="/#faq"          class="block px-3 py-2 rounded-md text-sm font-medium text-slate-700 hover:bg-slate-50">FAQ</a>
+        </div>
+    </div>
+</nav>
+
+<!-- ====== CONTENT ====== -->
+<main>
+    <div class="bg-white py-24 sm:py-32">
+    <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+        <h1 class="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl mb-8">Datenschutzerklärung</h1>
+        
+        <div class="prose prose-slate prose-lg">
+            <p class="lead">
+                Der Schutz Ihrer Daten und besonders der Daten von Schülern ist uns ein wichtiges Anliegen.
+                Nachfolgend informieren wir Sie über die Verarbeitung personenbezogener Daten bei der Nutzung von AbiPlaner.
+            </p>
+
+            <h3>1. Verantwortlicher</h3>
+            <p>
+                Verantwortlich gemäß Art. 4 Abs. 7 EU-Datenschutz-Grundverordnung (DS-GVO) ist:<br>
+                Wilfried Trinkl<br>
+                Leonrodstr. 30<br>
+                80636 München<br>
+                E-Mail: datenschutz@abiplaner-bayern.de
+            </p>
+
+            <h3>2. Hosting und Betrieb</h3>
+            <p>
+                AbiPlaner gibt es als Desktop-App und als Schulserver. In der Desktop-App liegen alle Daten in einer
+                Datenbankdatei im Benutzerprofil des eigenen Rechners, beim Schulserver auf dem Server der Schule. In
+                beiden Fällen haben wir keinen Zugriff auf die dort verarbeiteten Daten; verantwortlich für die
+                Datenverarbeitung ist allein die Schule bzw. die Person, die AbiPlaner betreibt.
+            </p>
+
+            <h3>3. Verarbeitete Datenkategorien</h3>
+            <p>Die Software dient der Verwaltung schulischer Abläufe und verarbeitet dabei folgende Kategorien personenbezogener Daten:</p>
+            <ul>
+                <li><strong>Schülerdaten:</strong> Namen, Klasse, Kursbelegungen, Notenpunkte (für Qualifikationsberechnungen), Nachteilsausgleiche.</li>
+                <li><strong>Lehrerdaten:</strong> Namen, Fächerkombinationen, Verfügbarkeitszeiten, Aufsichtszuteilungen.</li>
+                <li><strong>Systemdaten:</strong> Logfiles zur Fehleranalyse (werden nach 7 Tagen automatisch gelöscht), Session-Cookies (technisch notwendig).</li>
+            </ul>
+
+            
+            <h3>4. Suche nach neuen Versionen</h3>
+            <p>
+                Die Desktop-App fragt bei jedem Start unter
+                <code>abiplaner-bayern.de/downloads/desktop/latest.json</code> nach, ob es eine neue Version gibt.
+                Diese Adresse leitet an GitHub weiter, wo die Programmdateien liegen. Dabei werden nur die technisch
+                notwendigen Verbindungsdaten übertragen (insbesondere die IP-Adresse und der Zeitpunkt der Anfrage); sie
+                erscheinen in den Protokollen unseres Webservers und bei GitHub. Inhalte aus der Anwendung – Schüler-,
+                Lehrer- oder Planungsdaten – werden dabei nicht übertragen. Eine neue Version wird erst geladen, wenn
+                Sie „Jetzt aktualisieren“ anklicken; der Download erfolgt dann von GitHub. Für die Verarbeitung bei GitHub
+                gilt das <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement" rel="noopener">GitHub
+                General Privacy Statement</a>.
+            </p>
+            <p>
+                Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DS-GVO; unser berechtigtes Interesse liegt darin, Fehler- und
+                Sicherheitskorrekturen zuverlässig bereitzustellen. Die Suche lässt sich abschalten, indem die
+                Umgebungsvariable <code>ABIPLANER_OHNE_UPDATES</code> gesetzt wird.
+            </p>
+
+            <h3>5. Speicherdauer</h3>
+            <ul>
+                <li><strong>Logfiles zur Fehleranalyse und Protokolle des Webservers:</strong> 7 Tage.</li>
+                <li>
+                    <strong>Schüler- und Lehrerdaten</strong> werden von der Schule als
+                    Verantwortlicher verwaltet und nach deren Vorgaben gelöscht.
+                </li>
+            </ul>
+
+            <h3>6. Datensicherheit</h3>
+            <p>
+                Wir setzen umfangreiche technische Maßnahmen ein, um die Daten zu schützen:
+            </p>
+            <ul>
+                <li>Verschlüsselung aller Übertragungen mittels TLS/SSL.</li>
+                <li>Passwort-Hashing nach aktuellen Sicherheitsstandards.</li>
+                <li>Rollenbasierte Zugriffskontrolle (RBAC), die sicherstellt, dass Lehrer nur die für sie relevanten Daten sehen.</li>
+                <li>Regelmäßige Sicherheitsupdates der Container-Infrastruktur.</li>
+            </ul>
+
+            <h3>7. Ihre Rechte</h3>
+            <p>
+                Sie haben gegenüber uns folgende Rechte hinsichtlich der Sie betreffenden personenbezogenen Daten:
+            </p>
+            <ul>
+                <li>Recht auf Auskunft,</li>
+                <li>Recht auf Berichtigung oder Löschung,</li>
+                <li>Recht auf Einschränkung der Verarbeitung,</li>
+                <li>Recht auf Widerspruch gegen die Verarbeitung,</li>
+                <li>Recht auf Datenübertragbarkeit.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+</main>
+
+<!-- ====== FOOTER ====== -->
+<footer class="bg-slate-900 text-slate-400 pt-14 pb-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-4 gap-10">
+        <div class="md:col-span-2">
+            <div class="flex items-center gap-2.5">
+                <img src="/assets/landing/logo.png" class="w-8 h-8 brightness-0 invert" alt="">
+                <span class="font-display text-xl text-white">AbiPlaner</span>
+            </div>
+            <p class="mt-3 text-sm max-w-xs leading-relaxed">
+                Open-Source-Planungssystem für die Oberstufe. Entwickelt an und für Schulen.
+            </p>
+        </div>
+        <div>
+            <div class="text-white text-xs uppercase tracking-widest font-semibold mb-3">Produkt</div>
+            <ul class="space-y-2 text-sm">
+                <li><a href="/#features" class="hover:text-white transition">Funktionen</a></li>
+                <li><a href="/#modules"  class="hover:text-white transition">Module</a></li>
+                <li><a href="/installation" class="hover:text-white transition">Download &amp; Installation</a></li>
+                <li><a href="https://github.com/abiplaner/abiplaner" rel="noopener" class="hover:text-white transition">Quelltext auf GitHub</a></li>
+                <li><a href="/contact"  class="hover:text-white transition">Anfrage & Kontakt</a></li>
+            </ul>
+        </div>
+        <div>
+            <div class="text-white text-xs uppercase tracking-widest font-semibold mb-3">Rechtliches</div>
+            <ul class="space-y-2 text-sm">
+                <li><a href="/imprint"  class="hover:text-white transition">Impressum</a></li>
+                <li><a href="/privacy"  class="hover:text-white transition">Datenschutz</a></li>
+                <li><a href="https://github.com/abiplaner/abiplaner/blob/main/CODE_SIGNING.md" rel="noopener" class="hover:text-white transition">Code signing policy</a></li>
+                <li><a href="/contact"  class="hover:text-white transition">Kontakt</a></li>
+            </ul>
+        </div>
+    </div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 pt-6 border-t border-slate-800 text-xs flex flex-wrap items-center justify-between gap-3">
+        <span>© 2026 Wilfried Trinkl · Freie Software unter der <a href="https://github.com/abiplaner/abiplaner/blob/main/LICENSE" rel="noopener" class="underline decoration-slate-600 hover:text-white">GNU AGPL-3.0</a></span>
+        <span>Laravel 13.30.1 · PHP 8.5</span>
+    </div>
+</footer>
+
+</body>
+</html>

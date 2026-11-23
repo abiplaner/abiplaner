@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+>
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Feature">
+            <directory>tests/Feature</directory>
+        </testsuite>
+        <!-- Tenant-Tests laufen gegen MariaDB (echte Tenant-DBs) und sind
+             daher nicht Teil des schnellen SQLite-Standardlaufs.
+             Gezielt ausfuehren via testsuite-Filter "Tenant". -->
+        <testsuite name="Tenant">
+            <directory>tests/Tenant</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>app</directory>
+        </include>
+    </source>
+    <coverage>
+        <report>
+            <html outputDirectory="storage/coverage/html"/>
+            <clover outputFile="storage/coverage/clover.xml"/>
+            <text outputFile="php://stdout" showOnlySummary="true"/>
+        </report>
+    </coverage>
+    <php>
+        <!--
+            Die 256M aus docker/php/local.ini gelten auch fuer die CLI. Die
+            Tenant-Suite laeuft in einem einzigen Prozess und riss die Grenze
+            nach rund 140 Tests (Stand 22.10.2026) — PHPUnit meldete nur
+            "Premature end of PHP process", an wechselnden Tests.
+        -->
+        <ini name="memory_limit" value="1G"/>
+        <env name="APP_ENV" value="testing" force="true"/>
+        <env name="APP_MAINTENANCE_DRIVER" value="file" force="true"/>
+        <env name="BCRYPT_ROUNDS" value="4" force="true"/>
+        <env name="BROADCAST_CONNECTION" value="null" force="true"/>
+        <env name="CACHE_STORE" value="array" force="true"/>
+        <env name="DB_CONNECTION" value="sqlite" force="true"/>
+        <!--
+            DB_DATABASE wird hier bewusst NICHT auf ":memory:" gezwungen.
+
+            Die sqlite-Verbindung verdrahtet ":memory:" unter APP_ENV=testing
+            ohnehin fest (config/database.php) — die Erzwingung war fuer sie
+            ueberfluessig und vergiftete alle anderen Verbindungen: mysql,
+            tenant und mysql_template bauen ihren Datenbanknamen aus derselben
+            Variablen und zeigten damit auf eine Datenbank namens ":memory:".
+
+            Dass es lokal trotzdem lief, war ein Zufall: PHPUnits force setzt
+            putenv() und $_ENV, aber NICHT $_SERVER — und Laravels
+            Env-Repository fragt $_SERVER zuerst. docker compose reicht
+            DB_DATABASE als echte Prozessvariable in den Container, dort stand
+            weiterhin "abiplaner". In der CI gibt es diese Variable nicht, und
+            die Tenant-Suite uebersprang sich still, weil
+            guardProductionDatabase() ":memory:" statt "abiplaner" fand.
+
+            Kurz: die Verbindung war nicht konfiguriert, sondern geerbt.
+        -->
+        <env name="MAIL_MAILER" value="array" force="true"/>
+        <env name="QUEUE_CONNECTION" value="sync" force="true"/>
+        <env name="SESSION_DRIVER" value="array" force="true"/>
+        <env name="PULSE_ENABLED" value="false" force="true"/>
+        <env name="TELESCOPE_ENABLED" value="false" force="true"/>
+        <env name="NIGHTWATCH_ENABLED" value="false" force="true"/>
+    </php>
+</phpunit>

@@ -1,0 +1,46 @@
+# Webserver der Desktop-App. Die Werte setzt die App beim Start
+# (desktop/src-tauri/src/laufzeit.rs); der Server lauscht nur auf 127.0.0.1.
+{
+	frankenphp {
+		php_ini upload_max_filesize 25M
+		php_ini post_max_size 26M
+		php_ini memory_limit 512M
+	}
+	admin off
+	auto_https off
+	skip_install_trust
+}
+
+http://127.0.0.1:{$ABIPLANER_PORT} {
+	bind 127.0.0.1
+	root * "{$ABIPLANER_APP}/public"
+	encode zstd gzip
+
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "same-origin"
+		-Server
+	}
+
+	@versteckt {
+		path */.*
+	}
+	respond @versteckt 404
+
+	php_server {
+		env APP_ENV "{$APP_ENV}"
+		env APP_DEBUG "{$APP_DEBUG}"
+		env APP_KEY "{$APP_KEY}"
+		env APP_URL "{$APP_URL}"
+		env ABIPLANER_DATENBANK "{$ABIPLANER_DATENBANK}"
+		env ABIPLANER_DESKTOP_TOKEN "{$ABIPLANER_DESKTOP_TOKEN}"
+		env LARAVEL_STORAGE_PATH "{$LARAVEL_STORAGE_PATH}"
+		env LOG_CHANNEL "{$LOG_CHANNEL}"
+		env LOG_LEVEL "{$LOG_LEVEL}"
+		env SESSION_DRIVER "{$SESSION_DRIVER}"
+		env CACHE_STORE "{$CACHE_STORE}"
+		env QUEUE_CONNECTION "{$QUEUE_CONNECTION}"
+		env MAIL_MAILER "{$MAIL_MAILER}"
+	}
+}

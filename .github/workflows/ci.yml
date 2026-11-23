@@ -1,0 +1,237 @@
+name: CI
+
+# CI-Pipeline (Modul 5.4).
+#
+# Stufe 1 (Job `quality`): PHPStan Level 5 + Unit-Tests gegen SQLite :memory:.
+# Stufe 2 (Job `tenant`):  Feature-Tests gegen SQLite, Tenant-Tests gegen eine
+#                          echte MariaDB. Seit 27.08.2026 laeuft damit die
+#                          vollstaendige Suite auf einem fremden Rechner.
+#
+# Warum Stufe 2 dazugehört: die Tenant-Suite ist die einzige, die Tenancy,
+# Migrationen und die Mandantendatenbanken wirklich anfasst — und ausgerechnet
+# sie lief bis zum 26.08.2026 nur lokal.
+#
+# Die Flakiness vom 25.08. (`TenantCouldNotBeIdentifiedById` mit leerem
+# Tenant-Key) ist seit dem 30.08.2026 geklärt: Es waren ZWEI GLEICHZEITIGE
+# TESTLÄUFE gegen dieselbe MariaDB. Die Suite teilt sich eine einzige
+# Testschule (9999, Datenbank `school_9999`); der eine Lauf löscht sie,
+# während der andere sie migriert. Nachgestellt mit zwei parallel gestarteten
+# phpunit-Prozessen, die auf Anhieb dieselbe Fehlermischung erzeugten.
+# `TenantTestCase::guardParalleleLaeufe()` verhindert das jetzt über
+# GET_LOCK — der zweite Lauf überspringt die Suite mit klarer Meldung.
+#
+# Der leere Tenant-Key war eine eingebaute Falle: `Tenancy::runForMultiple()`
+# ruft nach einem erfolglosen `find()` ein `initialize(null)` auf, und die
+# Meldung nennt dieses `null` — nie den Schlüssel, der wirklich gesucht wurde.
+# In diesem Pfad ist sie IMMER leer. Wer sie für einen Befund hält, sucht
+# einen Fehler, den es nicht gibt.
+#
+# Hier läuft die Suite ohnehin allein: Jeder Job bekommt seinen eigenen
+# MariaDB-Dienst, zwei CI-Läufe können sich nicht in die Quere kommen.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    container:
+      image: php:8.5-cli
+    steps:
+      - name: Systempakete + PHP-Extensions installieren
+        run: |
+          apt-get update -y
+          apt-get install -y --no-install-recommends \
+            git unzip libicu-dev libzip-dev libpng-dev libonig-dev libsqlite3-dev \
+            nodejs npm
+          docker-php-ext-install -j"$(nproc)" intl zip gd bcmath pdo_sqlite
+
+      - name: Composer installieren
+        run: |
+          curl -sS https://getcomposer.org/installer | php -- \
+            --install-dir=/usr/local/bin --filename=composer
+          composer config --global cache-dir /tmp/composer-cache
+
+      - name: Repository auschecken
+        uses: actions/checkout@v4
+
+      - name: Abhaengigkeiten installieren (ohne Skripte)
+        # --no-scripts ueberspringt den tcpdf-Font-Build (post-install-cmd);
+        # die Fonts werden fuer PHPStan/Unit-Tests nicht benoetigt. Autoloader
+        # wird danach separat erzeugt, damit die App-Klassen aufloesbar sind.
+        run: |
+          composer install --no-interaction --prefer-dist --no-progress --no-scripts
+          composer dump-autoload --no-interaction
+
+      - name: .env vorbereiten
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: PHPStan (Larastan Level 5, 0 Fehler erwartet)
+        run: |
+          php -d memory_limit=1G vendor/bin/phpstan analyse \
+            --no-progress --memory-limit=1G
+
+      - name: Unit-Tests (SQLite :memory:)
+        run: |
+          php vendor/bin/phpunit --testsuite Unit --no-coverage
+
+  tenant:
+    runs-on: ubuntu-latest
+    container:
+      image: php:8.5-cli
+    services:
+      # Dienstname `ci-mariadb` (nicht `mariadb`): stammt aus der Zeit auf dem
+      # Gitea-Runner, wo `mariadb` mit Giteas eigener Datenbank kollidierte.
+      ci-mariadb:
+        image: mariadb:12.3
+        env:
+          # Die zentrale DB MUSS 'abiplaner' heissen: TenantTestCase::
+          # guardProductionDatabase() ueberspringt die gesamte Suite, wenn sie
+          # anders heisst — ein Schutz davor, versehentlich gegen eine
+          # Produktionsdatenbank zu laufen.
+          MARIADB_DATABASE: abiplaner
+          MARIADB_ROOT_PASSWORD: ci-root
+        # Bewusst KEIN `ports:`-Mapping. Der Job-Container haengt im selben
+        # Docker-Netz wie der Dienst und erreicht ihn unter dem Dienstnamen
+        # `mariadb` auf 3306 — eine Veroeffentlichung auf den Host braucht es
+        # dafuer nicht. Sie war sogar schaedlich: der erste Lauf scheiterte
+        # nach einer Sekunde mit "Bind for 127.0.0.1:3306 failed: port is
+        # already allocated", weil auf dem Runner-Host mehrere MariaDB-
+        # Container laufen. Feste Host-Ports auf einem geteilten Host sind
+        # dieselbe Falle wie die Stack-Kollisionen aus Modul 5.4.
+        #
+        # `--tmpfs /var/lib/mysql`: Datadir im RAM statt auf Platte.
+        # Gemessen am 22.09.2026: Der Schritt "Tenant-Tests (MariaDB)" allein
+        # brauchte 1657 s (27,6 von rund 28 Minuten Gesamtlaufzeit) — alle
+        # anderen Schritte zusammen unter 3 Minuten. Dieselbe Suite (442
+        # Tests) lief lokal in 365 s. Grund: Jeder Testfall legt eine
+        # komplette Mandanten-Datenbank per 94 Migrationen an und verwirft sie
+        # wieder — sehr DDL-/fsync-lastig, und die lokale DB laeuft seit
+        # Tagen mit warmem Cache, waehrend `ci-mariadb` bei jedem Lauf kalt
+        # startet, ganz ohne Tuning. Die Datenbank existiert ohnehin nur fuer
+        # die Dauer des Jobs — Haltbarkeit auf Platte ist hier wertlos.
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+          --tmpfs /var/lib/mysql:rw,size=2048m
+    steps:
+      - name: Systempakete + PHP-Extensions installieren
+        # nodejs aus zwei Gruenden: actions/checkout ist eine
+        # JavaScript-Action, die act_runner mit dem node des Job-Containers
+        # ausfuehrt (fehlt es, scheitert schon das Auschecken mit
+        # "exec: node: executable file not found in $PATH"), und die
+        # Feature-Tests rendern Blade-Ansichten mit @vite() — dafuer muss das
+        # Manifest gebaut sein.
+        run: |
+          apt-get update -y
+          apt-get install -y --no-install-recommends \
+            git unzip libicu-dev libzip-dev libpng-dev libonig-dev libsqlite3-dev \
+            nodejs npm default-mysql-client
+          docker-php-ext-install -j"$(nproc)" intl zip gd bcmath pdo_sqlite pdo_mysql
+
+      - name: Composer installieren
+        run: |
+          curl -sS https://getcomposer.org/installer | php -- \
+            --install-dir=/usr/local/bin --filename=composer
+          composer config --global cache-dir /tmp/composer-cache
+
+      - name: Repository auschecken
+        uses: actions/checkout@v4
+
+      - name: Abhaengigkeiten installieren (ohne Skripte)
+        run: |
+          composer install --no-interaction --prefer-dist --no-progress --no-scripts
+          composer dump-autoload --no-interaction
+
+      - name: .env vorbereiten
+        # Die Tenant-Suite biegt die Verbindung zur Laufzeit auf 'mysql' um
+        # (TenantTestCase::setUp), liest die Zugangsdaten aber aus der .env.
+        # Als root, weil die Suite Mandantendatenbanken anlegt und wieder
+        # verwirft — dafuer braucht es CREATE/DROP DATABASE.
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          {
+            echo "DB_CONNECTION=mysql"
+            echo "DB_HOST=ci-mariadb"
+            echo "DB_PORT=3306"
+            echo "DB_DATABASE=abiplaner"
+            echo "DB_USERNAME=root"
+            echo "DB_PASSWORD=ci-root"
+          } >> .env
+
+      - name: Auf MariaDB warten
+        run: |
+          for i in $(seq 1 60); do
+            if mariadb -h ci-mariadb -uroot -pci-root -e "SELECT 1" >/dev/null 2>&1; then
+              echo "MariaDB ist da (nach ${i}s)."
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "MariaDB kam nicht hoch."
+          exit 1
+
+      - name: Zentrale Migrationen einspielen
+        run: php artisan migrate --force
+
+      - name: Zentrale Stammdaten einspielen
+        # Die Tenant-Suite legt eine Testschule an, und TenantSeeder haengt sie
+        # an den juengsten zentralen Pruefungszeitraum. Ohne Seeder gibt es
+        # keinen: "Kein Pruefungszeitraum in der zentralen Datenbank" — daran
+        # scheiterten 172 von 174 Tenant-Tests. Migrationen allein reichen also
+        # nicht; die Stammdaten sind Teil der Umgebung, nicht des Schemas.
+        #
+        # DatabaseSeeder ist die zentrale Kette (Faecherkatalog, § 61-Anforde-
+        # rungen, globale Termine, Kolloquiumsperioden, Slot-Katalog,
+        # Abitur2027Seeder). Auf der frischen CI-Datenbank laeuft sie einmal;
+        # Abitur2027Seeder ueberspringt ohnehin, was schon steht, und
+        # SubjectSeeder vertraegt sich mit dem Katalog, den die Migration
+        # sync_subjects_catalog_with_seeder bereits angelegt hat (33 Faecher
+        # vorher wie nachher).
+        run: php artisan db:seed --force
+
+      - name: Frontend-Assets bauen
+        # Ohne public/build/manifest.json wirft jede Blade-Ansicht mit @vite()
+        # eine ViteManifestNotFoundException — zwoelf Feature-Tests scheiterten
+        # daran mit 500 statt 200. Lokal faellt das nicht auf, weil dort das
+        # Manifest vom letzten Build herumliegt.
+        run: |
+          npm ci
+          npm run build
+
+      - name: Feature-Tests (SQLite :memory:)
+        # Laufen gegen SQLite (config/database.php verdrahtet ':memory:' unter
+        # APP_ENV=testing fest) und brauchen die MariaDB nicht — sie standen in
+        # Stufe 1 nur deshalb nicht, weil niemand sie eingetragen hatte.
+        run: php -d memory_limit=1G vendor/bin/phpunit --testsuite Feature --no-coverage
+
+      - name: Tenant-Tests (MariaDB)
+        # SCHARF seit 27.08.2026. Damit laeuft zum ersten Mal die gesamte
+        # Suite auf einem fremden Rechner — die Tenant-Tests sind die
+        # einzigen, die Tenancy, Migrationen und echte Mandantendatenbanken
+        # anfassen.
+        #
+        # Zwei Befunde standen dem im Weg. Der erste war echt: ohne den
+        # Seeder-Schritt oben fehlt der zentrale Pruefungszeitraum, und 172
+        # von 174 Tests brechen ab.
+        #
+        # Der zweite — "Access denied for user 'root'@'<job-ip>'" auf den
+        # Verbindungen `mysql_template` und `tenant` — war eine Fehlspur.
+        # Nachgestellt mit einer MariaDB 12.3, die genau wie der Dienst hier
+        # konfiguriert ist (MARIADB_ROOT_PASSWORD, MARIADB_DATABASE=abiplaner),
+        # trat er nicht mehr auf: `root`@`%` hat ALL PRIVILEGES, und mit dem
+        # Seeder-Schritt lief die Suite 174/174 durch. Er stammte
+        # hoechstwahrscheinlich noch aus der Zeit, als `phpunit.xml`
+        # `DB_DATABASE=:memory:` erzwang und alle drei MySQL-Verbindungen
+        # daraus ihren Datenbanknamen bauten.
+        #
+        # Merke: eine Fehlermeldung, die man nicht nachstellen kann, ist eine
+        # Vermutung. Der Nachbau kostete zwanzig Minuten und ersparte mehrere
+        # CI-Runden zu je zwanzig.
+        run: php -d memory_limit=1G vendor/bin/phpunit --testsuite Tenant --no-coverage

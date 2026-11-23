@@ -1,0 +1,21 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - app
+
+    level: 5
+
+    treatPhpDocTypesAsCertain: false
+
+    bootstrapFiles:
+        - phpstan_bootstrap.php
+
+    ignoreErrors:
+        - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Builder#'
+        - '#Parameter \#1 \$view of function view expects view-string\|null, string given#'
+        - identifier: argument.unresolvableType
+
+    excludePaths:
+        - vendor

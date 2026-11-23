@@ -1,0 +1,224 @@
+# Desktop-App bauen und als GitHub-Release-ENTWURF bereitstellen.
+#
+#   git tag -a v1.0.0 -m "Was ist neu …"   # Text erscheint im Update-Dialog
+#   git push origin v1.0.0
+#
+# Danach auf GitHub den Entwurf prüfen und „Publish release“ klicken. Erst ein
+# veröffentlichtes Release ist unter …/releases/latest erreichbar; dorthin
+# leitet https://abiplaner-bayern.de/downloads/desktop/latest.json weiter, die
+# Adresse, die die installierten Apps nach Updates fragen.
+#
+# „Run workflow“ (workflow_dispatch) baut alle Pakete zur Probe, legt aber
+# kein Release an – die Pakete liegen dann als Artefakte am Lauf.
+#
+# Secrets (einrichten mit desktop/secrets-einrichten.sh):
+#   APPLE_CERTIFICATE (p12, base64), APPLE_CERTIFICATE_PASSWORD,
+#   APPLE_API_KEY, APPLE_API_ISSUER, APPLE_API_KEY_P8,
+#   TAURI_SIGNING_PRIVATE_KEY, TAURI_SIGNING_PRIVATE_KEY_PASSWORD
+name: Release Desktop-App
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        name: Version prüfen
+        run: |
+          v="$(jq -r .version desktop/src-tauri/tauri.conf.json)"
+          c="$(sed -n 's/^version = "\(.*\)"/\1/p' desktop/src-tauri/Cargo.toml | head -1)"
+          [ "$v" = "$c" ] || { echo "::error::tauri.conf.json ($v) und Cargo.toml ($c) haben verschiedene Versionen"; exit 1; }
+          if [ "$GITHUB_REF_TYPE" = tag ] && [ "$GITHUB_REF_NAME" != "v$v" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME passt nicht zur Version $v in tauri.conf.json"; exit 1
+          fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+  macos:
+    needs: version
+    runs-on: macos-15   # Apple Silicon
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: intl, zip, gd, bcmath, pdo_sqlite, sqlite3, mbstring
+          tools: composer:v2
+          coverage: none
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: npm }
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: desktop/src-tauri }
+      - name: Abhängigkeiten der Oberfläche
+        run: npm ci --include=dev --no-audit --no-fund
+      - name: Signierzertifikat und Notarisierungsschlüssel bereitstellen
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+        run: |
+          kc="$RUNNER_TEMP/signieren.keychain-db"
+          kc_pw="$(openssl rand -hex 16)"
+          printf '%s' "$APPLE_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/zert.p12"
+          security create-keychain -p "$kc_pw" "$kc"
+          security set-keychain-settings -lut 21600 "$kc"
+          security unlock-keychain -p "$kc_pw" "$kc"
+          security import "$RUNNER_TEMP/zert.p12" -k "$kc" -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$kc_pw" "$kc" > /dev/null
+          security list-keychains -d user -s "$kc" $(security list-keychains -d user | tr -d '"')
+          rm -f "$RUNNER_TEMP/zert.p12"
+          printf '%s' "$APPLE_API_KEY_P8" > "$RUNNER_TEMP/AuthKey.p8"
+          echo "APPLE_API_KEY_PATH=$RUNNER_TEMP/AuthKey.p8" >> "$GITHUB_ENV"
+      - name: Bauen, signieren, notarisieren
+        env:
+          NODE_ENV: development
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: desktop/bauen.sh
+      - name: Ergebnisse sammeln
+        run: |
+          v='${{ needs.version.outputs.version }}'
+          b=desktop/src-tauri/target/release/bundle
+          mkdir -p aus
+          cp "$b/dmg/Abiplaner_${v}_aarch64.dmg" aus/
+          cp "$b/macos/Abiplaner.app.tar.gz"     "aus/Abiplaner_${v}_aarch64.app.tar.gz"
+          cp "$b/macos/Abiplaner.app.tar.gz.sig" "aus/Abiplaner_${v}_aarch64.app.tar.gz.sig"
+          ls -la aus
+      - uses: actions/upload-artifact@v4
+        with: { name: macos, path: aus/, if-no-files-found: error }
+      - name: Schlüsselbund entfernen
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/signieren.keychain-db" 2>/dev/null || true
+          rm -f "$RUNNER_TEMP/AuthKey.p8"
+
+  windows:
+    needs: version
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: npm }
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: desktop/src-tauri }
+      - name: Bauen (NSIS-Installer)
+        shell: pwsh
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: ./desktop/bauen.ps1
+      - name: Ergebnisse sammeln
+        shell: bash
+        run: |
+          mkdir -p aus
+          cp desktop/src-tauri/target/release/bundle/nsis/*-setup.exe* aus/
+          ls -la aus
+      - uses: actions/upload-artifact@v4
+        with: { name: windows, path: aus/, if-no-files-found: error }
+
+  linux:
+    needs: version
+    runs-on: ubuntu-22.04   # ältere glibc: AppImage läuft auf mehr Systemen
+    env:
+      APPIMAGE_EXTRACT_AND_RUN: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Systempakete für Tauri
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev build-essential \
+            curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev xdg-utils rsync
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: intl, zip, gd, bcmath, pdo_sqlite, sqlite3, mbstring
+          tools: composer:v2
+          coverage: none
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: npm }
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: desktop/src-tauri }
+      - name: Abhängigkeiten der Oberfläche
+        run: npm ci --include=dev --no-audit --no-fund
+      - name: Bauen (AppImage)
+        env:
+          NODE_ENV: development
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: desktop/bauen.sh
+      - name: Ergebnisse sammeln
+        run: |
+          mkdir -p aus
+          cp desktop/src-tauri/target/release/bundle/appimage/*.AppImage* aus/
+          ls -la aus
+      - uses: actions/upload-artifact@v4
+        with: { name: linux, path: aus/, if-no-files-found: error }
+
+  release:
+    needs: [version, macos, windows, linux]
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/download-artifact@v4
+        with: { path: aus, merge-multiple: true }
+      - name: Versionshinweise aus der Tag-Nachricht
+        run: |
+          git fetch --force origin "refs/tags/$GITHUB_REF_NAME:refs/tags/$GITHUB_REF_NAME"
+          git tag -l --format='%(contents)' "$GITHUB_REF_NAME" | sed '/-----BEGIN PGP SIGNATURE-----/,$d' > hinweise.md
+          [ -s hinweise.md ] || echo "Abiplaner ${{ needs.version.outputs.version }}" > hinweise.md
+          cat hinweise.md
+      - name: latest.json für den Updater
+        run: |
+          v='${{ needs.version.outputs.version }}'
+          basis="https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME"
+          cd aus
+          mac="Abiplaner_${v}_aarch64.app.tar.gz"
+          win="$(ls *-setup.exe | head -1)"
+          lin="$(ls *.AppImage | head -1)"
+          for f in "$mac" "$win" "$lin"; do
+            [ -f "$f" ] && [ -f "$f.sig" ] || { echo "::error::$f oder $f.sig fehlt"; exit 1; }
+          done
+          jq -n \
+            --arg version "$v" \
+            --arg notes "$(cat ../hinweise.md)" \
+            --arg datum "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg mac_sig "$(cat "$mac.sig")" --arg mac_url "$basis/$mac" \
+            --arg win_sig "$(cat "$win.sig")" --arg win_url "$basis/$win" \
+            --arg lin_sig "$(cat "$lin.sig")" --arg lin_url "$basis/$lin" \
+            '{version: $version, notes: $notes, pub_date: $datum, platforms: {
+                "darwin-aarch64": {signature: $mac_sig, url: $mac_url},
+                "windows-x86_64": {signature: $win_sig, url: $win_url},
+                "linux-x86_64":   {signature: $lin_sig, url: $lin_url}}}' > latest.json
+          cat latest.json
+          sha256sum * > SHA256SUMS.txt
+      - name: Release-Entwurf anlegen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --draft \
+            --title "Abiplaner ${{ needs.version.outputs.version }}" \
+            --notes-file hinweise.md \
+            aus/*

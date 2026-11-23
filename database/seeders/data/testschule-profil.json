@@ -1,0 +1,141 @@
+{
+    "_hinweis": "Strukturprofil einer bayerischen Oberstufe, erhoben aus einer realen Schule (Abiturjahrgang 2026). Enthaelt ausschliesslich Kennzahlen und Verteilungen - keine Personendaten, keine Freitexte, keine Kennungen. Grundlage fuer TestschuleSeeder (Roadmap 1.3).",
+    "_erhebung": "Aggregatabfragen ueber die Datenbank der Pilotschule; Rohwerte sind nicht Teil des Repositorys.",
+    "_nachtrag_28_08_2026": "Die Erhebung vom 25.08. liess drei Faecher aus - Smw (13 Pruefungen), Ort (3) und Trs (1); ihre Summe erklaert genau die Luecke zwischen 553 Profil- und 570 echten Pruefungen. Smw ist am 28.08. nachgetragen worden, weil ohne Sportfach kein einziger Sport-Fall im Testbestand entsteht und die Sport-Rechnung (Fehlerklassen 11 und 12) damit ungeprueft bleibt. Ort und Trs sind bewusst weiter ausgelassen: sie bringen keinen Fall, den nicht ein anderes kleines Fach schon traegt. Zur Lehrerzahl bei Smw: die Pilotschule fuehrt die Lehrbefaehigungen als Sm (5) und Sw (7), der gemischte Kurs 2Smw- wird aus diesem Kreis geleitet; das Profil fasst die zwoelf unter Smw zusammen, weil der Seeder Lehrbefaehigungen je Fachcode verteilt.",
+    "jahrgaenge": {
+        "11": 127,
+        "12": 124,
+        "13": 114
+    },
+    "lehrer": {
+        "anzahl": 136,
+        "anteil_amtsbezeichnung": 0.74,
+        "anteil_aufsichtsbereit": 1.0,
+        "amtsbezeichnungen": ["Studienrat", "Oberstudienrat", "Studiendirektor", "Oberstudiendirektor", "Studienreferendar", "Beschäftigter"],
+        "beschaeftigungsarten": ["vz", "tz", "vd", "wh"],
+        "wochenstunden": [17, 20, 23, 24, 26],
+        "max_aufsichten_je_tag": 3
+    },
+    "pruefung": {
+        "pruefungen_je_schueler": 5,
+        "schriftlich_je_schueler": 3,
+        "muendlich_je_schueler": 2,
+        "anteil_nicht_bestanden": 0.02,
+        "anteil_nachteilsausgleich": 0.03
+    },
+    "kolloquium": {
+        "tage": 10,
+        "slots_je_tag": 5,
+        "kopplungsgruppen": 49,
+        "kopplung_groesse_min": 2,
+        "kopplung_groesse_max": 4,
+        "raeume_je_tag": 14,
+        "themenbereiche_je_semester": 4
+    },
+    "zusatzpruefung": {
+        "_hinweis": "Die Pilotschule fuehrte 40 Zusatzpruefungen auf 114 Abiturienten. Die Notenlage ist dort unvollstaendig gepflegt - nur vier tragen beide Noten. Die Testschule weicht darin bewusst ab: sie soll die Rechnung tragen, nicht den Pflegezustand.",
+        "tage": 3,
+        "slots_je_tag": 3,
+        "raeume_je_tag": 8,
+        "beginn": "13:30",
+        "anteil_pruefling": 0.35,
+        "anteil_verbesserung": 0.13,
+        "anteil_offen": 0.25,
+        "anteil_abwesend": 0.05,
+        "anteil_ohne_termin": 0.1,
+        "dauer_pruefung_minuten": 20,
+        "dauer_vorbereitung_minuten": 20,
+        "aufsichten_je_tag": 2
+    },
+    "wahlen": {
+        "_hinweis": "Aus der Pilotschule erhoben (28.08.2026): 20 LK-Kurse ueber zwei Schuljahre (je zehn Faecher, einer davon extern), 128 LK-Wahlen ohne durchgefuehrte Zuteilung, 11 W-Seminare mit je 15 Plaetzen und 128 W-Wahlen mit Zuteilung (80 Erstwahl, 20 Zweitwahl, 23 Drittwahl, 5 ohne).",
+        "lk_faecher": ["Ku", "WR", "E", "PuG", "Smw", "G", "Ph", "C", "Geo"],
+        "lk_externes_fach": "Ru",
+        "lk_erstwahl_gewichte": {"Ku": 21, "WR": 20, "E": 12, "PuG": 12, "Smw": 11, "G": 11, "Ph": 9, "C": 8, "Geo": 7, "B": 7, "Inf": 5, "Ru": 2},
+        "lk_anteil_zweitwahl": 0.98,
+        "wseminare": 11,
+        "wseminar_max_teilnehmer": 15,
+        "wseminar_anteil_erstwahl": 0.62,
+        "wseminar_anteil_zweitwahl": 0.16,
+        "wseminar_anteil_drittwahl": 0.18
+    },
+    "auszeichnungen": {
+        "_hinweis": "Aus der Pilotschule erhoben (28.08.2026): 17 Preisarten, 5 Beschreibungen, 53 Vergaben auf zwoelf Arten, davon sechs mit Rang und drei als Kandidat vermerkt. Die echten Preisnamen tragen Stifter- und Schulnamen und stehen deshalb nicht hier; der Seeder erfindet sie.",
+        "preisarten": 15,
+        "anteil_ausgezeichnet": 0.46,
+        "anteil_mit_rang": 0.11,
+        "anteil_kandidat": 0.06,
+        "beschreibungen": ["Buchpreis", "Ehrennadel", "Geldpreis", "Sachpreis", "Urkunde"]
+    },
+    "pruefungsausschuss": {
+        "_hinweis": "In der Pilotschule ungenutzt (keine Sitzung erfasst). Der Testbestand traegt zwei, damit die Niederschrift des Abiturpruefungsausschusses ueberhaupt gegen Daten laeuft.",
+        "sitzungen": 2,
+        "teilnehmer_je_sitzung": 8
+    },
+    "absenzen": {
+        "_hinweis": "Aus der Pilotschule erhoben (28.08.2026): 5110 Absenzen auf 238 Schueler, im Schnitt 21,5 je Kopf, hoechster Wert 75. Kategorien krank 2842 / verspaetet 1293 / fehlt 959 / sonstige 16; Entschuldigungen schriftlich 2501 / muendlich 1307 / nein 962 / attest 216 / attestpflicht 122 / offen 2. Zwei Importe, acht Massnahmen, kein Uebertrag.",
+        "importe": 2,
+        "je_schueler_schnitt": 21,
+        "je_schueler_max": 75,
+        "kategorien": {"krank": 2842, "verspaetet": 1293, "fehlt": 959, "sonstige": 16},
+        "entschuldigung": {"schriftlich": 2501, "muendlich": 1307, "nein": 962, "attest": 216, "attestpflicht": 122, "offen": 2},
+        "massnahme_ab_unentschuldigt": 6,
+        "massnahmen_max": 8,
+        "uebertraege": 12
+    },
+    "stundenplan": {
+        "_hinweis": "Aus der Pilotschule erhoben (28.08.2026): 2670 Eintraege auf 131 Lehrkraefte (Schnitt 20,4; min 2, max 50), Tage 1-5, Stunden 1-12, 53 Klassen- und Kursbezeichnungen. ACHTUNG: school_year steht hier im Kurzformat (2025/26), die Wahl-Tabellen fuehren die lange Form.",
+        "stunden_min": 8,
+        "stunden_max": 30,
+        "stunden_je_tag": 11,
+        "anteil_freier_tag": 0.25,
+        "klassen": ["Q12", "Q13", "11a", "11b", "11c", "11d", "11e", "10a", "10b", "10c", "9a", "9b", "BER"]
+    },
+    "schriftlich": {
+        "hoerverstaendnis_faecher": ["E", "F", "It"],
+        "aufsichten_je_belegung": 2,
+        "plaetze_je_raum_max": 24
+    },
+    "raeume": {
+        "exam": 15,
+        "preparation": 2,
+        "waiting": 1,
+        "corridor": 1,
+        "lockdown": 1
+    },
+    "sitzvorlagen": [
+        {"name": "Klassenzimmer klein", "reihen": 4, "spalten": 3},
+        {"name": "Klassenzimmer mittel", "reihen": 5, "spalten": 4},
+        {"name": "Klassenzimmer gross", "reihen": 6, "spalten": 4},
+        {"name": "Fachraum", "reihen": 7, "spalten": 3},
+        {"name": "Aula", "reihen": 8, "spalten": 4}
+    ],
+    "aufsicht": {
+        "muendlich_zeitslots_je_tag": 3,
+        "schriftlich_raster": 2,
+        "schriftlich_zeitslots_je_raster": 8
+    },
+    "faecher": [
+        {"code": "D",   "kurse_erhoeht": 5, "kurse_grundlegend": 0, "lehrer": 29, "schriftlich": 91,  "muendlich": 19},
+        {"code": "M",   "kurse_erhoeht": 5, "kurse_grundlegend": 0, "lehrer": 20, "schriftlich": 107, "muendlich": 6},
+        {"code": "E",   "kurse_erhoeht": 2, "kurse_grundlegend": 3, "lehrer": 30, "schriftlich": 56,  "muendlich": 27},
+        {"code": "G",   "kurse_erhoeht": 1, "kurse_grundlegend": 4, "lehrer": 17, "schriftlich": 9,   "muendlich": 33},
+        {"code": "PuG", "kurse_erhoeht": 1, "kurse_grundlegend": 3, "lehrer": 9,  "schriftlich": 14,  "muendlich": 40},
+        {"code": "B",   "kurse_erhoeht": 1, "kurse_grundlegend": 3, "lehrer": 11, "schriftlich": 14,  "muendlich": 16},
+        {"code": "C",   "kurse_erhoeht": 1, "kurse_grundlegend": 2, "lehrer": 12, "schriftlich": 14,  "muendlich": 4},
+        {"code": "Ku",  "kurse_erhoeht": 0, "kurse_grundlegend": 3, "lehrer": 3,  "schriftlich": 0,   "muendlich": 13},
+        {"code": "Eth", "kurse_erhoeht": 0, "kurse_grundlegend": 2, "lehrer": 4,  "schriftlich": 0,   "muendlich": 7},
+        {"code": "K",   "kurse_erhoeht": 0, "kurse_grundlegend": 2, "lehrer": 4,  "schriftlich": 0,   "muendlich": 9},
+        {"code": "Mu",  "kurse_erhoeht": 0, "kurse_grundlegend": 2, "lehrer": 4,  "schriftlich": 0,   "muendlich": 3},
+        {"code": "Ph",  "kurse_erhoeht": 1, "kurse_grundlegend": 0, "lehrer": 13, "schriftlich": 12,  "muendlich": 0},
+        {"code": "Geo", "kurse_erhoeht": 0, "kurse_grundlegend": 1, "lehrer": 8,  "schriftlich": 4,   "muendlich": 9},
+        {"code": "WR",  "kurse_erhoeht": 0, "kurse_grundlegend": 1, "lehrer": 6,  "schriftlich": 5,   "muendlich": 15},
+        {"code": "Inf", "kurse_erhoeht": 0, "kurse_grundlegend": 1, "lehrer": 4,  "schriftlich": 8,   "muendlich": 0},
+        {"code": "It",  "kurse_erhoeht": 0, "kurse_grundlegend": 1, "lehrer": 7,  "schriftlich": 3,   "muendlich": 4},
+        {"code": "F",   "kurse_erhoeht": 0, "kurse_grundlegend": 1, "lehrer": 13, "schriftlich": 2,   "muendlich": 3},
+        {"code": "Ev",  "kurse_erhoeht": 0, "kurse_grundlegend": 1, "lehrer": 3,  "schriftlich": 0,   "muendlich": 4},
+        {"code": "L",   "kurse_erhoeht": 0, "kurse_grundlegend": 1, "lehrer": 4,  "schriftlich": 0,   "muendlich": 1},
+        {"code": "Fs",  "kurse_erhoeht": 0, "kurse_grundlegend": 1, "lehrer": 2,  "schriftlich": 0,   "muendlich": 1},
+        {"code": "Smw", "kurse_erhoeht": 1, "kurse_grundlegend": 0, "lehrer": 12, "schriftlich": 3,   "muendlich": 10}
+    ]
+}

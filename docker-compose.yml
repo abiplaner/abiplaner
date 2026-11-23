@@ -1,0 +1,116 @@
+services:
+  # PHP-FPM mit Laravel
+  abiplaner_app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: abiplaner-app:latest
+    container_name: abiplaner-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - internal
+      - traefik_net
+    env_file: .env
+    environment:
+      TZ: Europe/Berlin
+    # Optional: den SMTP-Relay auf seine IPv4 festnageln. Hat der Mailserver
+    # einen A- UND einen AAAA-Eintrag, dieses Netz aber kein IPv6, haengt es
+    # sonst an der Reihenfolge der Aufloesung, ob eine Mail hinausgeht
+    # ("stream_socket_client(): ... (Network unreachable)"). Der Name bleibt
+    # der Name — TLS und SNI pruefen weiter gegen MAIL_PIN_HOST.
+    #
+    # Beide Werte stehen in der .env (siehe .env.example); ohne sie greift ein
+    # wirkungsloser Platzhalter unter .invalid. Bricht der Mailweg eines Tages:
+    # `getent ahostsv4 <MAIL_PIN_HOST>` auf dem Host vergleichen, MAIL_PIN_IPV4
+    # anpassen und den Container neu erzeugen — ohne Deploy.
+    extra_hosts:
+      - "${MAIL_PIN_HOST:-smtp-pin.invalid}:${MAIL_PIN_IPV4:-127.0.0.1}"
+
+  # Nginx Webserver
+  abiplaner_nginx:
+    image: nginx:alpine
+    container_name: abiplaner-nginx
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Berlin
+    ports:
+      - "80:80"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - abiplaner_network
+      - internal
+      - traefik_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_net"
+      - "traefik.http.routers.abiplaner-nginx.rule=Host(`abiplaner-bayern.de`) || Host(`www.abiplaner-bayern.de`)"
+      - "traefik.http.routers.abiplaner-nginx.entrypoints=websecure"
+      - "traefik.http.routers.abiplaner-nginx.tls.certresolver=myresolver"
+      - "traefik.http.services.abiplaner-nginx.loadbalancer.server.port=80"
+    depends_on:
+      - abiplaner_app
+
+  # MariaDB — seit dem Desktop-Umbau (22.11.2026) nicht mehr Teil der App:
+  # Abiplaner nutzt SQLite (database/abiplaner.sqlite). Der Dienst bleibt
+  # unter dem Profil 'mariadb' erreichbar, um alte Bestände zu übernehmen:
+  #   docker compose --profile mariadb up -d abiplaner_db
+  abiplaner_db:
+    profiles:
+      - mariadb
+    image: mariadb:12.3
+    container_name: abiplaner-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      TZ: Europe/Berlin
+    volumes:
+      - dbdata:/var/lib/mysql
+    labels:
+      - com.centurylinklabs.watchtower.enable=false
+    networks:
+      - internal
+
+  # phpMyAdmin
+  abiplaner_pma:
+    image: linuxserver/phpmyadmin:latest
+    container_name: abiplaner-pma
+    restart: unless-stopped
+    # Security-Checkliste H5: In Produktion via docker-compose.prod.yml deaktiviert
+    # (profiles greift nur, wenn das Profil nicht explizit aktiviert wird).
+    profiles:
+      - mariadb
+    environment:
+      PMA_HOST: abiplaner-db
+      PMA_PORT: 3306
+      TZ: Europe/Berlin
+    # Kein Port-Mapping in der Basis: Das lokale Mapping (8081:80) kommt aus
+    # docker-compose.override.yml. Ein zusätzliches 8080:80 hier kollidierte mit
+    # dem nginx-Dev-Port (8080) aus der Override – nginx startete dann ohne Port.
+    networks:
+      - internal
+    depends_on:
+      - abiplaner_db
+
+networks:
+  abiplaner_network:
+    driver: bridge
+  internal:
+    driver: bridge
+  traefik_net:
+    external: true
+
+volumes:
+  dbdata:
+    external: true
+    name: abiplaner_dbdata
+  db_data:
+    driver: local

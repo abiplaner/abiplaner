@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Nur die eingebaute Startseite darf die App-Befehle aufrufen; die Laravel-Seiten (http://127.0.0.1) haben keinen Zugriff.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>Abiplaner</title>
+  <link rel="stylesheet" href="start.css">
+</head>
+<body>
+  <main>
+    <h1>Abiplaner</h1>
+
+    <section id="laden">
+      <div class="kreisel" aria-hidden="true"></div>
+      <p id="laden-text">Abiplaner wird gestartet …</p>
+    </section>
+
+    <section id="auswahl" hidden>
+      <p>Wie möchten Sie Abiplaner verwenden?</p>
+      <button id="einzelplatz" class="karte">
+        <strong>Auf diesem Rechner</strong>
+        <span>Die Daten liegen in Ihrem Benutzerprofil. Für eine Person.</span>
+      </button>
+      <div class="karte">
+        <strong>Mit dem Schulserver verbinden</strong>
+        <span>Mehrere Kolleginnen und Kollegen arbeiten gemeinsam. Die Adresse erhalten Sie von Ihrer Systembetreuung.</span>
+        <form id="server-form">
+          <input id="server-url" type="url" placeholder="http://abiplaner.schule:8080" required>
+          <button type="submit">Verbinden</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="aktualisierung" hidden>
+      <div class="kreisel" aria-hidden="true"></div>
+      <p id="aktualisierung-text">Neue Version wird geladen …</p>
+      <progress id="aktualisierung-balken" max="100"></progress>
+      <p class="leise-text">Bitte das Fenster nicht schließen. Abiplaner startet danach von selbst neu.</p>
+    </section>
+
+    <section id="fehler" hidden>
+      <p class="fehler" id="fehler-text"></p>
+      <button id="nochmal">Erneut versuchen</button>
+      <button id="zurueck" class="leise">Andere Verwendung wählen</button>
+    </section>
+  </main>
+  <script src="start.js"></script>
+</body>
+</html>

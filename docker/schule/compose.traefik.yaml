@@ -1,0 +1,47 @@
+# Schulserver hinter Traefik (HTTPS, eigener Name), z. B. abiplaner.meine-schule.de.
+# Ergänzt compose.yaml; Aufruf über ./deploy.sh oder:
+#
+#   docker compose -p abiplaner-schule --env-file .env \
+#     -f docker/schule/compose.yaml -f docker/schule/compose.traefik.yaml up -d --build
+#
+# Die .env im Projektordner enthält NUR, was dieser Server braucht:
+#   ABIPLANER_HOST=abiplaner.meine-schule.de
+#   ABIPLANER_PROJEKT=abiplaner-schule   (Compose-Projekt; bestimmt den Volume-Namen)
+#   ABIPLANER_CONTAINER=abiplaner-schule (optional)
+#   APP_KEY=base64:…            (sonst erzeugt der Container einen eigenen)
+#   MAIL_MAILER, MAIL_HOST, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD,
+#   MAIL_SCHEME, MAIL_FROM_ADDRESS, MAIL_FROM_NAME
+#   MAIL_PIN_HOST, MAIL_PIN_IPV4 (optional, siehe unten)
+# Keine DB_*- oder Cache-Werte: Die setzt das Image (SQLite in /data).
+services:
+  abiplaner:
+    container_name: ${ABIPLANER_CONTAINER:-abiplaner-schule}
+    ports: !reset []
+    env_file:
+      - ../../.env
+    environment:
+      APP_URL: https://${ABIPLANER_HOST:?ABIPLANER_HOST fehlt in .env}
+      SESSION_SECURE_COOKIE: "true"
+    # SMTP-Relay auf seine IPv4 festnageln (das Docker-Netz hat kein IPv6).
+    extra_hosts:
+      - "${MAIL_PIN_HOST:-smtp-pin.invalid}:${MAIL_PIN_IPV4:-127.0.0.1}"
+    networks:
+      - traefik_net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_net"
+      - "traefik.http.routers.abiplaner-schule.rule=Host(`${ABIPLANER_HOST}`)"
+      - "traefik.http.routers.abiplaner-schule.entrypoints=websecure"
+      - "traefik.http.routers.abiplaner-schule.tls.certresolver=myresolver"
+      - "traefik.http.routers.abiplaner-schule.middlewares=abiplaner-schule-hsts"
+      - "traefik.http.middlewares.abiplaner-schule-hsts.headers.stsSeconds=31536000"
+      - "traefik.http.services.abiplaner-schule.loadbalancer.server.port=8080"
+
+networks:
+  traefik_net:
+    external: true

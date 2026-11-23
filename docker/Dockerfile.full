@@ -1,0 +1,51 @@
+FROM php:8.5-fpm-alpine
+
+# System-Abhängigkeiten installieren
+RUN apk add --no-cache \
+    git \
+    curl \
+    libpng-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
+    libzip-dev \
+    zip \
+    unzip \
+    icu-dev \
+    oniguruma-dev \
+    postgresql-dev \
+    mysql-client \
+    bash
+
+# PHP Extensions installieren
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
+        pdo_mysql \
+        mbstring \
+        exif \
+        pcntl \
+        bcmath \
+        gd \
+        zip \
+        intl
+
+# Redis Extension
+RUN pecl install redis && docker-php-ext-enable redis
+
+# Composer installieren
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# User für Laravel erstellen
+RUN addgroup -g 1000 www && \
+    adduser -D -u 1000 -G www www
+
+# Arbeitsverzeichnis setzen
+WORKDIR /var/www
+
+# Berechtigungen setzen
+RUN chown -R www:www /var/www
+
+# Wechsel zum www User
+USER www
+
+# Container starten
+CMD ["php-fpm"]

@@ -1,0 +1,33 @@
+# Abiplaner als Schulserver (Weg C) — für bis zu fünf Benutzer im Schulnetz.
+#
+#   docker compose -f docker/schule/compose.yaml up -d --build
+#
+# Danach im Browser oder in der Desktop-App (Modus „Schulserver“):
+#   http://<name-des-servers>:8080
+#
+# Alle Daten liegen im Volume abiplaner-daten (Datenbank, Sicherungen,
+# Schlüssel). Ein Update: neues Image bauen/ziehen und neu starten — vor dem
+# Einspielen neuer Datenbank-Migrationen sichert der Container automatisch.
+#
+# Datenschutz: Im Schulnetz unverschlüsselt (http) nur, wenn das Netz das
+# zulässt. Besser einen vorhandenen HTTPS-Proxy der Schule davor setzen und
+# den Port nur für diesen freigeben.
+services:
+  abiplaner:
+    build:
+      context: ../..
+      dockerfile: docker/schule/Dockerfile
+    image: abiplaner:latest
+    container_name: abiplaner
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      APP_URL: ${ABIPLANER_URL:-http://localhost:8080}
+      # Mail (Passwort vergessen) — optional, sonst nur über den Super-Admin.
+      MAIL_MAILER: ${MAIL_MAILER:-log}
+    volumes:
+      - abiplaner-daten:/data
+
+volumes:
+  abiplaner-daten:
