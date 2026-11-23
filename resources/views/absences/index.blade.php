@@ -22,11 +22,6 @@
     <div class="py-12">
         <div class="max-w-6xl mx-auto sm:px-6 lg:px-8">
 
-            @if (session('success'))
-                <div class="mb-6 bg-green-50 border-l-4 border-green-400 p-4 text-sm text-green-800">
-                    {{ session('success') }}
-                </div>
-            @endif
 
             {{-- Banner: letzter Import --}}
             @if (!$lastImport)

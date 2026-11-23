@@ -54,11 +54,6 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-4">
 
             {{-- Flash-Meldungen --}}
-            @if(session('success'))
-                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-                    {{ session('success') }}
-                </div>
-            @endif
             @if($errors->any())
                 <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
                     @foreach($errors->all() as $error)

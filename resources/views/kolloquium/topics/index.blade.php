@@ -19,19 +19,7 @@
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-            @if (session('success'))
-                <div class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800
-                            text-green-800 dark:text-green-200 px-4 py-3 rounded-lg text-sm">
-                    {{ session('success') }}
-                </div>
-            @endif
 
-            @if (session('error'))
-                <div class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800
-                            text-red-800 dark:text-red-200 px-4 py-3 rounded-lg text-sm">
-                    {{ session('error') }}
-                </div>
-            @endif
 
             {{-- Upload der Vorlage --}}
             <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden">

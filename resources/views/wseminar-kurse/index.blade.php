@@ -52,11 +52,6 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
             
-            @if (session('success'))
-                <div class="bg-green-50 border-l-4 border-green-400 p-4">
-                    <p class="text-sm text-green-800">{{ session('success') }}</p>
-                </div>
-            @endif
 
             {{-- Statistik-Karten --}}
             {{-- Statistik-Karten --}}

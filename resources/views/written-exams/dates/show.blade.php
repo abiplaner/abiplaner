@@ -24,16 +24,6 @@
     <div class="py-8">
         <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-4">
 
-            @if(session('success'))
-                <div class="px-4 py-3 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-lg text-sm">
-                    {{ session('success') }}
-                </div>
-            @endif
-            @if(session('error'))
-                <div class="px-4 py-3 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded-lg text-sm">
-                    {{ session('error') }}
-                </div>
-            @endif
 
             {{-- Slot-Info --}}
             <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-5">

@@ -36,11 +36,6 @@
             
             {{-- Die Erfolgsmeldung gibt bereits layouts/app.blade.php aus; hier stand sie ein zweites Mal (28.08.2026). --}}
 
-            @if (session('error'))
-                <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                    {{ session('error') }}
-                </div>
-            @endif
 
             {{-- Stundenplan Import Info --}}
             <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">

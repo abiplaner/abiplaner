@@ -74,17 +74,6 @@
         <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
             {{-- Flash-Meldungen --}}
-            @if(session('success'))
-                <div class="bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-700 text-green-800 dark:text-green-300 px-4 py-3 rounded-lg">
-                    {{ session('success') }}
-                </div>
-            @endif
-            @if(session('error') || $errors->any())
-                <div class="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 text-red-800 dark:text-red-300 px-4 py-3 rounded-lg">
-                    @if(session('error'))<p>{{ session('error') }}</p>@endif
-                    @foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach
-                </div>
-            @endif
 
             {{-- ===== PRÜFUNGSZEITEN-ABDECKUNG PRÜFEN ===== --}}
             @php

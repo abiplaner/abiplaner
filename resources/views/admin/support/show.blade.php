@@ -13,11 +13,6 @@
     <div class="py-12">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-            @if (session('success'))
-                <div class="bg-green-50 border border-green-200 text-green-800 rounded-md p-4 text-sm">
-                    {{ session('success') }}
-                </div>
-            @endif
 
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 space-y-3">
                 <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-600">

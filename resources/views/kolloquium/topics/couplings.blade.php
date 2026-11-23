@@ -19,12 +19,6 @@
     <div class="py-6">
         <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-            @if (session('success'))
-                <div class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800
-                            text-green-800 dark:text-green-200 px-4 py-3 rounded-lg text-sm">
-                    {{ session('success') }}
-                </div>
-            @endif
 
             @if (session('warning'))
                 <div class="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800

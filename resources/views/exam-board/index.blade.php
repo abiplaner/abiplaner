@@ -50,12 +50,6 @@
     <div class="py-6" x-data="examBoard({{ json_encode($blank) }}, {{ json_encode($meetingData) }})">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
 
-            @if(session('success'))
-                <div class="p-3 bg-green-50 border border-green-300 rounded text-green-800 text-sm">{{ session('success') }}</div>
-            @endif
-            @if(session('error'))
-                <div class="p-3 bg-red-50 border border-red-300 rounded text-red-800 text-sm">{{ session('error') }}</div>
-            @endif
             @if($errors->any())
                 <div class="p-3 bg-red-50 border border-red-300 rounded text-red-800 text-sm">
                     <ul class="list-disc list-inside">

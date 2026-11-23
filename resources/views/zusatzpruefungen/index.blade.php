@@ -119,12 +119,6 @@
             </div>
 
             {{-- Flash --}}
-            @if(session('success'))
-                <div class="mb-4 p-3 bg-green-50 border border-green-300 rounded text-green-800 text-sm">{{ session('success') }}</div>
-            @endif
-            @if(session('error'))
-                <div class="mb-4 p-3 bg-red-50 border border-red-300 rounded text-red-800 text-sm">{{ session('error') }}</div>
-            @endif
 
             {{-- Schüler hinzufügen + Übersicht --}}
             @php

@@ -10,11 +10,6 @@
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
                     
-                    @if(session('success'))
-                        <div class="mb-4 text-sm text-green-600 dark:text-green-400">
-                            {{ session('success') }}
-                        </div>
-                    @endif
 
                     @if ($errors->any())
                         <div class="mb-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded">

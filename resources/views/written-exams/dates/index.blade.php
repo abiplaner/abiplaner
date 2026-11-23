@@ -48,11 +48,6 @@
     <div class="py-8">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-3">
 
-            @if(session('success'))
-                <div class="px-4 py-3 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-lg text-sm">
-                    {{ session('success') }}
-                </div>
-            @endif
 
             {{-- Statistik-Übersicht --}}
             @if($statsTotal > 0)

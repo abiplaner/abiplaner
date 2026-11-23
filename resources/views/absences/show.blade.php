@@ -14,11 +14,6 @@
     <div class="py-12">
         <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-            @if (session('success'))
-                <div class="bg-green-50 border-l-4 border-green-400 p-4 text-sm text-green-800">
-                    {{ session('success') }}
-                </div>
-            @endif
 
             {{-- Attestpflicht-Status (abiplaner-interne Entscheidung, Modul 8.3) --}}
             <div class="border-l-4 p-4 text-sm {{ $attestpflicht['active'] ? 'bg-amber-50 border-amber-400 text-amber-900' : 'bg-gray-50 border-gray-300 text-gray-600' }}">

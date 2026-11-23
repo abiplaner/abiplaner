@@ -44,11 +44,6 @@
         @endphp
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-            @if(session('error'))
-                <div class="px-4 py-3 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded-lg text-sm">
-                    {{ session('error') }}
-                </div>
-            @endif
 
             {{-- Hinweis bestehende Zuordnungen --}}
             @php $totalExisting = collect($assignmentsByDate)->flatten()->count(); @endphp

@@ -17,11 +17,6 @@
     <div class="py-12" x-data="timeSlotManager()">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-            @if (session('success'))
-                <div class="bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-700 text-green-800 dark:text-green-300 px-4 py-3 rounded-lg">
-                    {{ session('success') }}
-                </div>
-            @endif
 
             @if ($errors->any())
                 <div class="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 text-red-800 dark:text-red-300 px-4 py-3 rounded-lg">

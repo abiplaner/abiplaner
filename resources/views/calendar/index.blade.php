@@ -23,17 +23,7 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             
-            @if(session('success'))
-                <div class="mb-4 p-4 bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 rounded-lg">
-                    {{ session('success') }}
-                </div>
-            @endif
             
-            @if(session('error'))
-                <div class="mb-4 p-4 bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200 rounded-lg">
-                    {{ session('error') }}
-                </div>
-            @endif
             
             <!-- iCal Feed Box -->
             <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
