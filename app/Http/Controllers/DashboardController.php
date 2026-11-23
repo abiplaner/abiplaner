@@ -154,17 +154,17 @@ class DashboardController extends Controller
             // Backup-Info optional – kein Fehler werfen
         }
 
-        // --- Einrichtungsstand (Modul 6.2) ---
-        // Nur der Fortschritt, nicht die ganze Liste: Das Banner soll auf die
-        // Einrichtungsseite zeigen, sie nicht ersetzen.
+        // --- Einrichtung (Modul 6.2, 23.11.2026) ---
+        // Die drei Dateien, ohne die nicht geplant werden kann, gleich auf der
+        // Startseite — mit Anleitung, Vorlage und Maske. Was die Einrichtung
+        // vorbelegt (Räume, Zeitslots …), steht nur auf der Einrichtungsseite.
         $checklist = app(\App\Services\SetupChecklistService::class);
         $setupItems = $checklist->items();
         $setupProgress = $checklist->progress($setupItems);
-
-        // --- Importe (23.11.2026) ---
-        // Die drei Dateien, ohne die nicht geplant werden kann, gleich auf der
-        // Startseite — mit Anleitung, Vorlage und Maske.
-        $importe = $this->importStand($setupItems);
+        $importe = array_values(array_filter(
+            $setupItems,
+            fn (array $item) => $item['gruppe'] === \App\Services\SetupChecklistService::GRUPPE_EINLESEN
+        ));
 
         // Vorbelegung für „Neuer Prüfungszeitraum" aus den bayernweiten Terminen.
         $zeitraumVorschlag = app(\App\Services\BayernTermine::class)->zeitraumVorschlag();
@@ -174,47 +174,6 @@ class DashboardController extends Controller
             'upcomingEvents', 'lastBackup', 'schoolName', 'setupProgress',
             'importe', 'zeitraumVorschlag'
         ));
-    }
-
-    /**
-     * Die geführten Importe mit ihrem Stand. Lehrkräfte und Schüler lesen den
-     * Stand aus der Einrichtungs-Checkliste, der Stundenplan zählt die
-     * Einträge des laufenden Schuljahres.
-     *
-     * @param list<array<string, mixed>> $setupItems
-     * @return list<array{schluessel: string, titel: string, quelle: string, beschreibung: string, route: string|null, erledigt: bool, detail: string}>
-     */
-    private function importStand(array $setupItems): array
-    {
-        $status = array_column($setupItems, null, 'key');
-        $importe = [];
-
-        foreach (app(\App\Services\ImportLeitfadenService::class)->alle() as $leitfaden) {
-            if ($leitfaden['schluessel'] === \App\Services\ImportLeitfadenService::STUNDENPLAN) {
-                $anzahl = \App\Models\TimetableEntry::where('school_year', \App\Support\SchoolYear::current())->count();
-                $erledigt = $anzahl > 0;
-                $detail = $anzahl > 0
-                    ? $anzahl . ' Einträge für ' . \App\Support\SchoolYear::current()
-                    : 'Noch kein Stundenplan für ' . \App\Support\SchoolYear::current();
-            } else {
-                $item = $status[$leitfaden['checklisten_key']] ?? null;
-                $erledigt = $item !== null && $item['status'] === \App\Services\SetupChecklistService::STATUS_DONE;
-                $detail = $item !== null ? (string) $item['detail'] : '';
-            }
-
-            $importe[] = [
-                'schluessel' => $leitfaden['schluessel'],
-                'titel' => $leitfaden['titel'],
-                'quelle' => $leitfaden['quelle'],
-                'beschreibung' => $leitfaden['beschreibung'],
-                'route' => $leitfaden['route'] !== null && \Illuminate\Support\Facades\Route::has($leitfaden['route'])
-                    ? $leitfaden['route'] : null,
-                'erledigt' => $erledigt,
-                'detail' => $detail,
-            ];
-        }
-
-        return $importe;
     }
 
     /**

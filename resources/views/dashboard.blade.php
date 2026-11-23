@@ -18,24 +18,6 @@
     <div class="py-10">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-            {{-- Einrichtungsstand (Modul 6.2): erscheint nur, solange Pflichtbausteine fehlen --}}
-            @if (($setupProgress['offen'] ?? 0) > 0)
-                <div class="bg-amber-50 border-l-4 border-amber-400 rounded-lg px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
-                    <div class="grow">
-                        <p class="text-amber-900 font-medium">
-                            Die Einrichtung ist noch nicht abgeschlossen —
-                            {{ $setupProgress['offen'] }} von {{ $setupProgress['gesamt'] }} Bausteinen fehlen.
-                        </p>
-                        <p class="text-sm text-amber-800 mt-0.5">
-                            Bis dahin lässt sich die Prüfungsplanung nur eingeschränkt nutzen.
-                        </p>
-                    </div>
-                    <a href="{{ route('setup.index') }}"
-                       class="shrink-0 inline-flex items-center px-4 py-2 bg-amber-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-amber-700">
-                        Zur Einrichtung
-                    </a>
-                </div>
-            @endif
 
             @if (session('success'))
                 <div class="bg-green-50 border border-green-200 text-green-800 rounded-lg px-4 py-3 text-sm">
@@ -52,56 +34,20 @@
                  Die drei Dateien, ohne die nicht geplant werden kann. Erscheint,
                  solange eine davon fehlt — nach dem Schuljahreswechsel also wieder. --}}
             @unlessarchive
-            @if (auth()->user()->isSchoolPlanner() && collect($importe)->contains('erledigt', false))
+            @if (auth()->user()->isSchoolPlanner() && ($setupProgress['offen'] ?? 0) > 0)
                 <div class="bg-white rounded-xl shadow-sm border border-indigo-200 overflow-hidden">
-                    <div class="px-5 py-4 bg-indigo-50 border-b border-indigo-100 flex flex-col sm:flex-row sm:items-center gap-3">
-                        <div class="grow">
-                            <h3 class="font-semibold text-indigo-900">📥 Daten einlesen</h3>
-                            <p class="text-sm text-indigo-800 mt-0.5">
-                                Drei Dateien aus ASV und Untis, dann kann geplant werden. Zu jeder gibt es eine
-                                Anleitung mit dem Exportweg und eine Vorlage zum Herunterladen.
-                                Reihenfolge: erst die Lehrkräfte.
-                            </p>
-                        </div>
-                        <a href="{{ route('setup.imports') }}"
-                           class="shrink-0 text-sm font-medium text-indigo-700 hover:text-indigo-900">
-                            Alle Anleitungen →
+                    <div class="px-4 py-3 bg-indigo-50 border-b border-indigo-100 flex flex-wrap items-baseline justify-between gap-2">
+                        <h3 class="font-semibold text-indigo-900">
+                            📥 Daten einlesen — {{ $setupProgress['erledigt'] }} von {{ $setupProgress['gesamt'] }} erledigt
+                            <span class="font-normal text-sm text-indigo-800">· erst die Lehrkräfte, dann der Rest</span>
+                        </h3>
+                        <a href="{{ route('setup.index') }}" class="text-xs font-medium text-indigo-700 hover:text-indigo-900">
+                            Zur Einrichtung →
                         </a>
                     </div>
                     <ol class="divide-y divide-gray-100">
-                        @foreach ($importe as $nr => $import)
-                            <li class="px-5 py-4 flex flex-col md:flex-row md:items-center gap-3">
-                                <div class="flex items-start gap-3 grow">
-                                    <span class="shrink-0 mt-0.5 inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold
-                                        {{ $import['erledigt'] ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600' }}">
-                                        {{ $import['erledigt'] ? '✓' : $nr + 1 }}
-                                    </span>
-                                    <div>
-                                        <div class="font-medium text-gray-900">
-                                            {{ $import['titel'] }}
-                                            <span class="ml-1 text-xs font-normal text-gray-500">{{ $import['detail'] }}</span>
-                                        </div>
-                                        <p class="text-sm text-gray-600 mt-0.5">{{ $import['beschreibung'] }}</p>
-                                    </div>
-                                </div>
-                                <div class="shrink-0 flex flex-wrap gap-2 md:justify-end">
-                                    <a href="{{ route('setup.imports') }}#{{ $import['schluessel'] }}"
-                                       class="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-xs font-semibold text-gray-700 hover:bg-gray-50">
-                                        Anleitung
-                                    </a>
-                                    <a href="{{ route('setup.imports.template', $import['schluessel']) }}"
-                                       class="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-xs font-semibold text-gray-700 hover:bg-gray-50">
-                                        ↓ Vorlage
-                                    </a>
-                                    @if ($import['route'])
-                                        <a href="{{ route($import['route']) }}"
-                                           class="inline-flex items-center px-3 py-1.5 rounded-md text-xs font-semibold text-white
-                                               {{ $import['erledigt'] ? 'bg-gray-500 hover:bg-gray-600' : 'bg-indigo-600 hover:bg-indigo-700' }}">
-                                            {{ $import['erledigt'] ? 'Erneut importieren' : 'Importieren' }}
-                                        </a>
-                                    @endif
-                                </div>
-                            </li>
+                        @foreach ($importe as $nr => $item)
+                            @include('setup.partials._einlesen', ['item' => $item, 'nr' => $nr + 1])
                         @endforeach
                     </ol>
                 </div>

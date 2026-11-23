@@ -21,15 +21,15 @@ class SetupController extends Controller
         $items = $checklist->items();
 
         return view('setup.index', [
-            'adminItems' => array_values(array_filter(
+            'einlesen' => array_values(array_filter(
                 $items,
-                fn (array $item) => $item['scope'] === SetupChecklistService::SCOPE_ADMIN
+                fn (array $item) => $item['gruppe'] === SetupChecklistService::GRUPPE_EINLESEN
             )),
-            'schoolItems' => array_values(array_filter(
+            'anpassen' => array_values(array_filter(
                 $items,
-                fn (array $item) => $item['scope'] === SetupChecklistService::SCOPE_SCHULE
+                fn (array $item) => $item['gruppe'] === SetupChecklistService::GRUPPE_ANPASSEN
             )),
-            'progress' => $checklist->progress(),
+            'progress' => $checklist->progress($items),
         ]);
     }
 
