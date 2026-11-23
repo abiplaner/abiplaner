@@ -59,6 +59,24 @@ abstract class TenantTestCase extends TestCase
         return $schule;
     }
 
+    /**
+     * Der Prüfungszeitraum ohne die Slots der Grundausstattung — für Tests,
+     * die ihr Zeitraster selbst aufbauen.
+     *
+     * Bis 23.11.2026 legten die Stammdaten zwei Zeiträume an (2026, 2027),
+     * der TenantSeeder füllte nur den jüngsten, und `ExamPeriod::first()`
+     * lieferte den leeren älteren. Seitdem gibt es nur noch den laufenden.
+     */
+    protected function leererPruefungszeitraum(): \App\Models\ExamPeriod
+    {
+        $zeitraum = \App\Models\ExamPeriod::query()->orderBy('year')->firstOrFail();
+
+        \Illuminate\Support\Facades\DB::table('supervision_time_slots')->where('exam_period_id', $zeitraum->id)->delete();
+        \Illuminate\Support\Facades\DB::table('time_slots')->where('exam_period_id', $zeitraum->id)->delete();
+
+        return $zeitraum;
+    }
+
     /** Aus der Mandantenzeit; es gibt nichts mehr aufzuräumen. */
     protected function cleanupTestSchool(): void
     {

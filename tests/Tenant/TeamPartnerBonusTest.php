@@ -116,7 +116,7 @@ class TeamPartnerBonusTest extends TenantTestCase
     {
         $school = $this->createTestSchool();
 
-        $examPeriod = ExamPeriod::first();
+        $examPeriod = $this->leererPruefungszeitraum();
         $day1 = $examPeriod->week_1_start->format('Y-m-d');
         $day2 = $examPeriod->week_1_start->copy()->addDay()->format('Y-m-d');
 
@@ -158,7 +158,7 @@ class TeamPartnerBonusTest extends TenantTestCase
     {
         $school = $this->createTestSchool();
 
-        $examPeriod = ExamPeriod::first();
+        $examPeriod = $this->leererPruefungszeitraum();
         $day1 = $examPeriod->week_1_start->format('Y-m-d');
         $day2 = $examPeriod->week_1_start->copy()->addDay()->format('Y-m-d');
 
@@ -203,7 +203,7 @@ class TeamPartnerBonusTest extends TenantTestCase
     {
         $school = $this->createTestSchool();
 
-        $examPeriod = ExamPeriod::first();
+        $examPeriod = $this->leererPruefungszeitraum();
         $day1 = $examPeriod->week_1_start->format('Y-m-d');
         $day2 = $examPeriod->week_1_start->copy()->addDay()->format('Y-m-d');
 

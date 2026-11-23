@@ -144,7 +144,7 @@ class BayernTermineTest extends TenantTestCase
     }
 
     #[Test]
-    public function zeitraeume_entstehen_nur_bis_zum_laufenden_schuljahr_der_naechste_wird_vorgeschlagen(): void
+    public function nur_der_zeitraum_des_laufenden_schuljahres_entsteht_der_naechste_wird_vorgeschlagen(): void
     {
         Carbon::setTestNow('2026-11-23 12:00:00');
 
@@ -152,8 +152,9 @@ class BayernTermineTest extends TenantTestCase
             DB::table('exam_periods')->delete();
             $bericht = $this->termine()->einspielen(mitZeitraeumen: true);
 
-            $this->assertSame(['Abitur 2026', 'Abitur 2027'], $bericht['zeitraeume']);
-            $this->assertSame([2026, 2027], DB::table('exam_periods')->orderBy('year')->pluck('year')->map(fn ($j) => (int) $j)->all());
+            // Nur der laufende Jahrgang — 2026 ist vorbei, 2028 noch nicht dran.
+            $this->assertSame(['Abitur 2027'], $bericht['zeitraeume']);
+            $this->assertSame([2027], DB::table('exam_periods')->orderBy('year')->pluck('year')->map(fn ($j) => (int) $j)->all());
 
             $this->assertSame([
                 'name' => 'Abitur 2028', 'year' => 2028,

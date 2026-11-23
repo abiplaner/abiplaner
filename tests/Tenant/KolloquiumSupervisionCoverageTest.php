@@ -92,7 +92,7 @@ class KolloquiumSupervisionCoverageTest extends TenantTestCase
     {
         $school = $this->createTestSchool();
 
-        $examPeriod = ExamPeriod::first();
+        $examPeriod = $this->leererPruefungszeitraum();
         $date       = $examPeriod->week_1_start->format('Y-m-d');
 
         $examRoom = Room::create(['room_number' => 'COV-EXAM', 'room_type' => 'exam', 'is_active' => true]);
@@ -116,7 +116,7 @@ class KolloquiumSupervisionCoverageTest extends TenantTestCase
     {
         $school = $this->createTestSchool();
 
-        $examPeriod = ExamPeriod::first();
+        $examPeriod = $this->leererPruefungszeitraum();
         $date       = $examPeriod->week_1_start->format('Y-m-d');
 
         $examRoom = Room::create(['room_number' => 'COV2-EXAM', 'room_type' => 'exam', 'is_active' => true]);
@@ -138,7 +138,7 @@ class KolloquiumSupervisionCoverageTest extends TenantTestCase
     {
         $school = $this->createTestSchool();
 
-        $examPeriod = ExamPeriod::first();
+        $examPeriod = $this->leererPruefungszeitraum();
         $date       = $examPeriod->week_1_start->format('Y-m-d');
 
         $examRoom = Room::create(['room_number' => 'COV3-EXAM', 'room_type' => 'exam', 'is_active' => true]);
@@ -180,7 +180,7 @@ class KolloquiumSupervisionCoverageTest extends TenantTestCase
     {
         $school = $this->createTestSchool();
 
-        $examPeriod = ExamPeriod::first();
+        $examPeriod = $this->leererPruefungszeitraum();
         $date       = $examPeriod->week_1_start->format('Y-m-d');
 
         $examRoom      = Room::create(['room_number' => 'COV4-EXAM', 'room_type' => 'exam', 'is_active' => true]);

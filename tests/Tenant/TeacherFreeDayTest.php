@@ -146,7 +146,7 @@ class TeacherFreeDayTest extends TenantTestCase
     {
         $school = $this->createTestSchool();
 
-        $examPeriod = ExamPeriod::first();
+        $examPeriod = $this->leererPruefungszeitraum();
         $day1 = $examPeriod->week_1_start->format('Y-m-d');
         $day2 = $examPeriod->week_1_start->copy()->addDay()->format('Y-m-d');
         $weekday2 = Carbon::parse($day2)->isoWeekday();
@@ -178,7 +178,7 @@ class TeacherFreeDayTest extends TenantTestCase
     {
         $school = $this->createTestSchool();
 
-        $examPeriod = ExamPeriod::first();
+        $examPeriod = $this->leererPruefungszeitraum();
         $day1 = $examPeriod->week_1_start->format('Y-m-d');
         $day2 = $examPeriod->week_1_start->copy()->addDay()->format('Y-m-d');
         $weekday2 = Carbon::parse($day2)->isoWeekday();
@@ -211,7 +211,7 @@ class TeacherFreeDayTest extends TenantTestCase
     {
         $school = $this->createTestSchool();
 
-        $examPeriod = ExamPeriod::first();
+        $examPeriod = $this->leererPruefungszeitraum();
         $day1 = $examPeriod->week_1_start->format('Y-m-d');
         $weekday1 = Carbon::parse($day1)->isoWeekday();
         // Unterricht an einem ANDEREN Wochentag → Tag 1 ist stundenplanfrei
@@ -244,7 +244,7 @@ class TeacherFreeDayTest extends TenantTestCase
     {
         $school = $this->createTestSchool();
 
-        $examPeriod = ExamPeriod::first();
+        $examPeriod = $this->leererPruefungszeitraum();
         $day1 = $examPeriod->week_1_start->format('Y-m-d');
         $day2 = $examPeriod->week_1_start->copy()->addDay()->format('Y-m-d');
         $weekday1 = Carbon::parse($day1)->isoWeekday();
@@ -294,7 +294,7 @@ class TeacherFreeDayTest extends TenantTestCase
     {
         $school = $this->createTestSchool();
 
-        $examPeriod = ExamPeriod::first();
+        $examPeriod = $this->leererPruefungszeitraum();
         $day1 = $examPeriod->week_1_start->format('Y-m-d');
         $day2 = $examPeriod->week_1_start->copy()->addDay()->format('Y-m-d');
         $weekday2 = Carbon::parse($day2)->isoWeekday();

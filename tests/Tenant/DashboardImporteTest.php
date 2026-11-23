@@ -42,19 +42,25 @@ class DashboardImporteTest extends TenantTestCase
     }
 
     #[Test]
-    public function der_neue_pruefungszeitraum_ist_mit_dem_naechsten_abitur_vorbelegt(): void
+    public function kacheln_fuehren_zu_den_masken_und_es_gibt_keinen_knopf_neuer_zeitraum(): void
     {
-        Carbon::setTestNow('2026-11-23 12:00:00');
-
-        try {
-            $antwort = $this->actingAs($this->planer())->get(route('dashboard'));
-        } finally {
-            Carbon::setTestNow();
-        }
+        $antwort = $this->actingAs($this->planer())->get(route('dashboard'));
 
         $antwort->assertOk();
-        $antwort->assertSee('value="Abitur 2028"', false);
-        $antwort->assertSee('value="2028-05-22"', false);
-        $antwort->assertSee('value="2028-06-02"', false);
+        foreach (['students.index', 'courses.index', 'teachers.index', 'rooms.index'] as $route) {
+            $antwort->assertSee('href="' . route($route) . '"', false);
+        }
+        $antwort->assertDontSee('Neuer Prüfungszeitraum');
+        $antwort->assertDontSee('createExamPeriodModal');
+    }
+
+    #[Test]
+    public function eine_erfolgsmeldung_erscheint_nur_einmal(): void
+    {
+        $antwort = $this->actingAs($this->planer())
+            ->withSession(['success' => 'Willkommen! Probe ist eingerichtet.'])
+            ->get(route('dashboard'));
+
+        $this->assertSame(1, substr_count($antwort->getContent(), 'Willkommen! Probe ist eingerichtet.'));
     }
 }

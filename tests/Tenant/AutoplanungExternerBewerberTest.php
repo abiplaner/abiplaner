@@ -131,7 +131,7 @@ class AutoplanungExternerBewerberTest extends TenantTestCase
     {
         $school = $this->createTestSchool();
 
-        $examPeriod = ExamPeriod::first();
+        $examPeriod = $this->leererPruefungszeitraum();
         $tage = [
             $examPeriod->week_1_start->format('Y-m-d'),
             $examPeriod->week_1_start->copy()->addDay()->format('Y-m-d'),
@@ -169,7 +169,7 @@ class AutoplanungExternerBewerberTest extends TenantTestCase
     {
         $school = $this->createTestSchool();
 
-        $examPeriod = ExamPeriod::first();
+        $examPeriod = $this->leererPruefungszeitraum();
         $tage = [
             $examPeriod->week_1_start->format('Y-m-d'),
             $examPeriod->week_1_start->copy()->addDay()->format('Y-m-d'),
@@ -224,7 +224,7 @@ class AutoplanungExternerBewerberTest extends TenantTestCase
     {
         $school = $this->createTestSchool();
 
-        $examPeriod = ExamPeriod::first();
+        $examPeriod = $this->leererPruefungszeitraum();
         $tage = [
             $examPeriod->week_1_start->format('Y-m-d'),
             $examPeriod->week_1_start->copy()->addDay()->format('Y-m-d'),
@@ -275,7 +275,7 @@ class AutoplanungExternerBewerberTest extends TenantTestCase
     {
         $school = $this->createTestSchool();
 
-        $examPeriod = ExamPeriod::first();
+        $examPeriod = $this->leererPruefungszeitraum();
         $tag = $examPeriod->week_1_start->format('Y-m-d');
         $this->infrastruktur($examPeriod, [$tag]);
 
