@@ -48,6 +48,66 @@
                 </div>
             @endif
 
+            {{-- ===== IMPORTE (23.11.2026) =====
+                 Die drei Dateien, ohne die nicht geplant werden kann. Erscheint,
+                 solange eine davon fehlt — nach dem Schuljahreswechsel also wieder. --}}
+            @unlessarchive
+            @if (auth()->user()->isSchoolPlanner() && collect($importe)->contains('erledigt', false))
+                <div class="bg-white rounded-xl shadow-sm border border-indigo-200 overflow-hidden">
+                    <div class="px-5 py-4 bg-indigo-50 border-b border-indigo-100 flex flex-col sm:flex-row sm:items-center gap-3">
+                        <div class="grow">
+                            <h3 class="font-semibold text-indigo-900">📥 Daten einlesen</h3>
+                            <p class="text-sm text-indigo-800 mt-0.5">
+                                Drei Dateien aus ASV und Untis, dann kann geplant werden. Zu jeder gibt es eine
+                                Anleitung mit dem Exportweg und eine Vorlage zum Herunterladen.
+                                Reihenfolge: erst die Lehrkräfte.
+                            </p>
+                        </div>
+                        <a href="{{ route('setup.imports') }}"
+                           class="shrink-0 text-sm font-medium text-indigo-700 hover:text-indigo-900">
+                            Alle Anleitungen →
+                        </a>
+                    </div>
+                    <ol class="divide-y divide-gray-100">
+                        @foreach ($importe as $nr => $import)
+                            <li class="px-5 py-4 flex flex-col md:flex-row md:items-center gap-3">
+                                <div class="flex items-start gap-3 grow">
+                                    <span class="shrink-0 mt-0.5 inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold
+                                        {{ $import['erledigt'] ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600' }}">
+                                        {{ $import['erledigt'] ? '✓' : $nr + 1 }}
+                                    </span>
+                                    <div>
+                                        <div class="font-medium text-gray-900">
+                                            {{ $import['titel'] }}
+                                            <span class="ml-1 text-xs font-normal text-gray-500">{{ $import['detail'] }}</span>
+                                        </div>
+                                        <p class="text-sm text-gray-600 mt-0.5">{{ $import['beschreibung'] }}</p>
+                                    </div>
+                                </div>
+                                <div class="shrink-0 flex flex-wrap gap-2 md:justify-end">
+                                    <a href="{{ route('setup.imports') }}#{{ $import['schluessel'] }}"
+                                       class="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-xs font-semibold text-gray-700 hover:bg-gray-50">
+                                        Anleitung
+                                    </a>
+                                    <a href="{{ route('setup.imports.template', $import['schluessel']) }}"
+                                       class="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-xs font-semibold text-gray-700 hover:bg-gray-50">
+                                        ↓ Vorlage
+                                    </a>
+                                    @if ($import['route'])
+                                        <a href="{{ route($import['route']) }}"
+                                           class="inline-flex items-center px-3 py-1.5 rounded-md text-xs font-semibold text-white
+                                               {{ $import['erledigt'] ? 'bg-gray-500 hover:bg-gray-600' : 'bg-indigo-600 hover:bg-indigo-700' }}">
+                                            {{ $import['erledigt'] ? 'Erneut importieren' : 'Importieren' }}
+                                        </a>
+                                    @endif
+                                </div>
+                            </li>
+                        @endforeach
+                    </ol>
+                </div>
+            @endif
+            @endarchive
+
             {{-- ===== KEIN PRÜFUNGSZEITRAUM ===== --}}
             @if (!$activeExamPeriod)
                 <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
@@ -471,36 +531,42 @@
             </div>
             <form action="{{ route('exam-periods.store') }}" method="POST">
                 @csrf
+                @if ($zeitraumVorschlag)
+                    <p class="mb-4 text-sm text-gray-600 bg-blue-50 border border-blue-100 rounded-md px-3 py-2">
+                        Vorbelegt mit den Kolloquiumswochen aus der Bekanntmachung des Kultusministeriums
+                        für das {{ $zeitraumVorschlag['name'] }}.
+                    </p>
+                @endif
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div class="col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                        <input type="text" name="name" required
+                        <input type="text" name="name" required value="{{ $zeitraumVorschlag['name'] ?? '' }}"
                                class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                placeholder="z.B. Abitur 2027">
                     </div>
                     <div class="col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Jahr</label>
-                        <input type="number" name="year" required value="{{ date('Y') + 1 }}" min="2024" max="2099"
+                        <input type="number" name="year" required value="{{ $zeitraumVorschlag['year'] ?? date('Y') + 1 }}" min="2024" max="2099"
                                class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Woche 1 Start</label>
-                        <input type="date" name="week_1_start" required
+                        <input type="date" name="week_1_start" required value="{{ $zeitraumVorschlag['week_1_start'] ?? '' }}"
                                class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Woche 1 Ende</label>
-                        <input type="date" name="week_1_end" required
+                        <input type="date" name="week_1_end" required value="{{ $zeitraumVorschlag['week_1_end'] ?? '' }}"
                                class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Woche 2 Start</label>
-                        <input type="date" name="week_2_start" required
+                        <input type="date" name="week_2_start" required value="{{ $zeitraumVorschlag['week_2_start'] ?? '' }}"
                                class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Woche 2 Ende</label>
-                        <input type="date" name="week_2_end" required
+                        <input type="date" name="week_2_end" required value="{{ $zeitraumVorschlag['week_2_end'] ?? '' }}"
                                class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
                     </div>
                 </div>
