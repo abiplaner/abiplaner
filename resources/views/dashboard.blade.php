@@ -4,14 +4,8 @@
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 {{ __('Dashboard') }}
             </h2>
-            @unlessarchive
-            @can('create', \App\Models\ExamPeriod::class)
-                <button data-modal-open="createExamPeriodModal"
-                        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium">
-                    Neuer Prüfungszeitraum
-                </button>
-            @endcan
-            @endarchive
+            {{-- „Neuer Prüfungszeitraum“ entfällt (23.11.2026): Den neuen
+                 Zeitraum legt der Schuljahreswechsel aus den Termindateien an. --}}
         </div>
     </x-slot>
 
@@ -19,16 +13,6 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
 
-            @if (session('success'))
-                <div class="bg-green-50 border border-green-200 text-green-800 rounded-lg px-4 py-3 text-sm">
-                    {{ session('success') }}
-                </div>
-            @endif
-            @if (session('error'))
-                <div class="bg-red-50 border border-red-200 text-red-800 rounded-lg px-4 py-3 text-sm">
-                    {{ session('error') }}
-                </div>
-            @endif
 
             {{-- ===== IMPORTE (23.11.2026) =====
                  Die drei Dateien, ohne die nicht geplant werden kann. Erscheint,
@@ -120,20 +104,24 @@
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 @php
                     $baseStats = [
-                        ['label' => 'Schülerinnen & Schüler', 'value' => $stats['total_students'] ?? 0, 'icon' => '🎓'],
-                        ['label' => 'Kurse',                  'value' => $stats['total_courses']  ?? 0, 'icon' => '📚'],
-                        ['label' => 'Lehrkräfte',             'value' => $stats['total_teachers'] ?? 0, 'icon' => '👩‍🏫'],
-                        ['label' => 'Räume',                  'value' => $stats['total_rooms']    ?? 0, 'icon' => '🚪'],
+                        ['label' => 'Schülerinnen & Schüler', 'value' => $stats['total_students'] ?? 0, 'icon' => '🎓', 'route' => 'students.index'],
+                        ['label' => 'Kurse',                  'value' => $stats['total_courses']  ?? 0, 'icon' => '📚', 'route' => 'courses.index'],
+                        ['label' => 'Lehrkräfte',             'value' => $stats['total_teachers'] ?? 0, 'icon' => '👩‍🏫', 'route' => 'teachers.index'],
+                        ['label' => 'Räume',                  'value' => $stats['total_rooms']    ?? 0, 'icon' => '🚪', 'route' => 'rooms.index'],
                     ];
+                    $statsVerlinkt = auth()->user()->isSchoolPlanner();
                 @endphp
                 @foreach ($baseStats as $s)
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
+                    @php $alsLink = $statsVerlinkt && \Illuminate\Support\Facades\Route::has($s['route']); @endphp
+                    <{{ $alsLink ? 'a' : 'div' }} @if ($alsLink) href="{{ route($s['route']) }}" @endif
+                        class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4
+                               {{ $alsLink ? 'hover:border-blue-300 hover:shadow transition' : '' }}">
                         <span class="text-2xl">{{ $s['icon'] }}</span>
                         <div>
                             <div class="text-xs text-gray-500 font-medium">{{ $s['label'] }}</div>
                             <div class="text-2xl font-bold text-gray-900">{{ $s['value'] }}</div>
                         </div>
-                    </div>
+                    </{{ $alsLink ? 'a' : 'div' }}>
                 @endforeach
             </div>
 
@@ -463,73 +451,6 @@
         </div>
     </div>
 
-    {{-- ===== MODAL: NEUER PRÜFUNGSZEITRAUM ===== --}}
-    <div id="createExamPeriodModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-xl bg-white">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold">Neuer Prüfungszeitraum</h3>
-                <button data-modal-close="createExamPeriodModal"
-                        class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
-            </div>
-            <form action="{{ route('exam-periods.store') }}" method="POST">
-                @csrf
-                @if ($zeitraumVorschlag)
-                    <p class="mb-4 text-sm text-gray-600 bg-blue-50 border border-blue-100 rounded-md px-3 py-2">
-                        Vorbelegt mit den Kolloquiumswochen aus der Bekanntmachung des Kultusministeriums
-                        für das {{ $zeitraumVorschlag['name'] }}.
-                    </p>
-                @endif
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div class="col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                        <input type="text" name="name" required value="{{ $zeitraumVorschlag['name'] ?? '' }}"
-                               class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                               placeholder="z.B. Abitur 2027">
-                    </div>
-                    <div class="col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Jahr</label>
-                        <input type="number" name="year" required value="{{ $zeitraumVorschlag['year'] ?? date('Y') + 1 }}" min="2024" max="2099"
-                               class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Woche 1 Start</label>
-                        <input type="date" name="week_1_start" required value="{{ $zeitraumVorschlag['week_1_start'] ?? '' }}"
-                               class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Woche 1 Ende</label>
-                        <input type="date" name="week_1_end" required value="{{ $zeitraumVorschlag['week_1_end'] ?? '' }}"
-                               class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Woche 2 Start</label>
-                        <input type="date" name="week_2_start" required value="{{ $zeitraumVorschlag['week_2_start'] ?? '' }}"
-                               class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Woche 2 Ende</label>
-                        <input type="date" name="week_2_end" required value="{{ $zeitraumVorschlag['week_2_end'] ?? '' }}"
-                               class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    </div>
-                </div>
-                <div class="flex justify-end gap-3">
-                    <button type="button"
-                            data-modal-close="createExamPeriodModal"
-                            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 text-sm">
-                        Abbrechen
-                    </button>
-                    <button type="submit"
-                            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm">
-                        Erstellen
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
 
     <script @cspNonce>
     const examPeriods = @json($examPeriods->keyBy('id'));
@@ -563,7 +484,6 @@
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
             closeEditModal();
-            document.getElementById('createExamPeriodModal').classList.add('hidden');
         }
     });
     </script>

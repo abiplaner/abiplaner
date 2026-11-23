@@ -166,13 +166,10 @@ class DashboardController extends Controller
             fn (array $item) => $item['gruppe'] === \App\Services\SetupChecklistService::GRUPPE_EINLESEN
         ));
 
-        // Vorbelegung für „Neuer Prüfungszeitraum" aus den bayernweiten Terminen.
-        $zeitraumVorschlag = app(\App\Services\BayernTermine::class)->zeitraumVorschlag();
-
         return view('dashboard', compact(
             'examPeriods', 'activeExamPeriod', 'stats',
             'upcomingEvents', 'lastBackup', 'schoolName', 'setupProgress',
-            'importe', 'zeitraumVorschlag'
+            'importe'
         ));
     }
 
