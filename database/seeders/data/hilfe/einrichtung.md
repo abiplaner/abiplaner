@@ -35,9 +35,10 @@ Administration.
 
 ## Was Ihre Schule erledigt
 
-- **Räume** — solange nur die zwölf Platzhalter der Grundausstattung dastehen
-  (MB201 bis MB207, MB105, B2, MA206 bis MA208), gilt der Punkt als teilweise
-  erledigt: Tragen Sie Ihre echten Raumnummern ein.
+- **Räume** — solange nur die Platzhalter der Grundausstattung dastehen
+  („Raum 001" bis „Raum 207", „Flur 2. OG"), gilt der Punkt als teilweise
+  erledigt: Benennen Sie die Räume nach Ihren echten Raumnummern um, löschen
+  Sie überzählige und legen Sie fehlende an.
 - **Sitzvorlagen** — vollständig ist der Punkt erst, wenn jeder Prüfungsraum
   eine Standardvorlage hat.
 - **Zeitslots für die Kolloquien** — mindestens einer im aktuellen
@@ -51,6 +52,22 @@ Administration.
   fünf Prüfungsfächer.
 - **Schuleinstellungen** — der einzige *optionale* Punkt. Ohne Eintrag gelten
   die Vorgabewerte.
+
+## Was die Grundausstattung mitbringt
+
+Beim Einrichten legt das Programm ein Gerüst an, das Sie nur noch anpassen:
+
+- **Räume und Sitzpläne** — zwölf Prüfungsräume (neun Klassenzimmer 8×4, zwei
+  kleine Räume 4×4, ein Fachraum 6×3), dazu Vorbereitungsraum, Warteraum und
+  eine Fluraufsicht. Jeder Prüfungsraum hat schon einen Sitzplan mit Pult und
+  gesperrten Plätzen.
+- **Zeitslots der Kolloquien** — montags bis donnerstags fünf Prüfungen am
+  Nachmittag (13:10 bis 17:00), freitags fünf am Vormittag (08:30 bis 13:40),
+  je 30 Minuten Vorbereitung und 30 Minuten Prüfung. Feiertage in den
+  Prüfungswochen bleiben frei.
+- **Aufsichten** — drei Aufsichtsfenster je Kolloquiumstag sowie zwei Raster
+  für die schriftlichen Prüfungen (Standard und moderne Fremdsprachen mit
+  Hörverstehen).
 
 ## Die eine Reihenfolge, die zählt
 

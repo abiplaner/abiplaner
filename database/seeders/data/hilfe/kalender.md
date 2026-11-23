@@ -22,6 +22,13 @@ Priorität (Normal, Mittel, Hoch).
 Die Liste mischt Ihre schulischen Termine mit **globalen** Terminen, die zentral
 gepflegt werden. Globale Termine können Sie ansehen, aber nicht bearbeiten.
 
+Die globalen Termine sind die bayernweiten: Ferien nach der Ferienordnung,
+Feiertage, die Termine der Abiturprüfung aus dem Bayerischen Ministerialblatt
+und die Fristen der Oberstufe. Sie kommen mit dem Programm: Erscheint ein neues
+Schuljahr oder wird ein Termin berichtigt, bringt das nächste Update die
+Änderung mit, und beim Start wird der Kalender abgeglichen. Berichtigte Termine
+werden dabei ersetzt, nicht verdoppelt.
+
 ### Abo in Google Calendar, Outlook oder Apple Calendar
 
 Der Kasten **Kalender-Abo** hält vier Adressen bereit: alle Termine oder je eine
