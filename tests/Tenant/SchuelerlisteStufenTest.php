@@ -110,6 +110,54 @@ class SchuelerlisteStufenTest extends TenantTestCase
         $antwort->assertDontSee('Elfer');
     }
 
+    /**
+     * Die Fächerübersicht zählte über abiturGrades() Q12 und Q13 zusammen —
+     * der Import setzt keine Klasse, also fiel niemand heraus.
+     */
+    #[Test]
+    public function die_faecheruebersicht_zaehlt_nur_die_gewaehlte_stufe(): void
+    {
+        [$fachQ13, $fachQ12] = \App\Models\Subject::whereNotIn('name', ['Deutsch', 'Mathematik'])
+            ->orderBy('id')->take(2)->get()->all();
+
+        $this->pruefung('Dreizehner', $fachQ13, 'fu13');
+        $this->pruefung('Zwoelfer', $fachQ12, 'fu12');
+
+        foreach (['13' => [$fachQ13, $fachQ12], '12' => [$fachQ12, $fachQ13]] as $stufe => [$eigenes, $fremdes]) {
+            $antwort = $this->actingAs($this->planner)->get(route('students.subjects', ['stufe' => (string) $stufe]));
+
+            $antwort->assertOk();
+            $faecher = $antwort->viewData('subjectStats')->pluck('subject_name')->all();
+            $this->assertContains($eigenes->name, $faecher, "Q{$stufe}: eigenes Fach fehlt");
+            $this->assertNotContains($fremdes->name, $faecher, "Q{$stufe}: Fach der anderen Stufe gezählt");
+            $this->assertSame(1, $antwort->viewData('plausibility')['student_count']);
+            $antwort->assertSee(route('students.subjects.export.excel', ['stufe' => (string) $stufe]), false);
+            $this->assertSame(1, substr_count((string) $antwort->getContent(), 'aria-current="page"'));
+        }
+    }
+
+    private function pruefung(string $nachname, \App\Models\Subject $fach, string $kurscode): void
+    {
+        $schueler = Student::where('lastname', $nachname)->firstOrFail();
+        $lehrkraft = \App\Models\Teacher::create([
+            'shortcode' => strtoupper($kurscode),
+            'firstname' => 'Test',
+            'lastname' => 'Fach',
+        ]);
+        $kurs = \App\Models\Course::create([
+            'exam_period_id' => $schueler->exam_period_id,
+            'subject_id' => $fach->id,
+            'course_code' => $kurscode,
+            'teacher_id' => $lehrkraft->id,
+            'level' => 'grundlegend',
+        ]);
+        \App\Models\StudentExam::create([
+            'student_id' => $schueler->id,
+            'course_id' => $kurs->id,
+            'exam_type' => 'written',
+        ]);
+    }
+
     #[Test]
     public function der_excel_export_enthaelt_nur_die_gewaehlte_stufe(): void
     {
