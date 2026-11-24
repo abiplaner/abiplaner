@@ -60,8 +60,9 @@ abstract class TenantTestCase extends TestCase
     }
 
     /**
-     * Der Prüfungszeitraum ohne die Slots der Grundausstattung — für Tests,
-     * die ihr Zeitraster selbst aufbauen.
+     * Der Prüfungszeitraum ohne die Slots und Kolloquiumsräume der
+     * Grundausstattung — für Tests, die ihr Zeitraster und ihre Räume selbst
+     * aufbauen.
      *
      * Bis 23.11.2026 legten die Stammdaten zwei Zeiträume an (2026, 2027),
      * der TenantSeeder füllte nur den jüngsten, und `ExamPeriod::first()`
@@ -73,6 +74,7 @@ abstract class TenantTestCase extends TestCase
 
         \Illuminate\Support\Facades\DB::table('supervision_time_slots')->where('exam_period_id', $zeitraum->id)->delete();
         \Illuminate\Support\Facades\DB::table('time_slots')->where('exam_period_id', $zeitraum->id)->delete();
+        \Illuminate\Support\Facades\DB::table('oral_exam_day_rooms')->where('exam_period_id', $zeitraum->id)->delete();
 
         return $zeitraum;
     }

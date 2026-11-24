@@ -3,14 +3,15 @@
 namespace Tests\Tenant;
 
 use App\Support\Grundausstattung;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
  * Grundausstattung einer neuen Schule (TenantSeeder, 23.11.2026):
- * Räume mit Sitzplänen, Kolloquiumsslots Mo–Do nachmittags und freitags
- * vormittags, freie Feiertage, Aufsichtsraster.
+ * Räume mit Sitzplänen, Kolloquiumsslots nachmittags ohne den Freitag der
+ * zweiten Woche, Räume je Kolloquiumstag, freie Feiertage, Aufsichtsraster.
  */
 class GrundausstattungTest extends TenantTestCase
 {
@@ -37,25 +38,63 @@ class GrundausstattungTest extends TenantTestCase
     }
 
     #[Test]
-    public function kolloquien_laufen_mo_bis_do_nachmittags_und_freitags_vormittags(): void
+    public function kolloquien_laufen_nachmittags_ohne_freitag_der_zweiten_woche(): void
     {
         $this->createTestSchool();
         $periode = DB::table('exam_periods')->orderByDesc('year')->first();
 
         $slots = DB::table('time_slots')->where('exam_period_id', $periode->id)->orderBy('date')->orderBy('slot_number')->get();
-        $this->assertCount(50, $slots, '10 Tage × 5 Slots');
+        $this->assertCount(45, $slots, '9 Tage × 5 Slots');
 
-        foreach ($slots->groupBy('date') as $datum => $tag) {
-            $erster = substr((string) $tag->first()->exam_start_time, 0, 5);
-            $this->assertSame(Grundausstattung::istFreitag($datum) ? '08:30' : '13:10', $erster, $datum);
+        $tage = $slots->groupBy(fn ($s) => substr((string) $s->date, 0, 10));
+
+        foreach ($tage as $datum => $tag) {
+            $this->assertSame('13:10', substr((string) $tag->first()->exam_start_time, 0, 5), $datum);
+            $this->assertSame('17:00', substr((string) $tag->last()->exam_end_time, 0, 5), $datum);
         }
 
+        // Freitag der ersten Woche wie die anderen Tage, Freitag der zweiten frei.
+        $freitag1 = Carbon::parse($periode->week_1_start)->startOfWeek()->addDays(4)->toDateString();
+        $freitag2 = Carbon::parse($periode->week_2_start)->startOfWeek()->addDays(4)->toDateString();
+        $this->assertArrayHasKey($freitag1, $tage->all());
+        $this->assertArrayNotHasKey($freitag2, $tage->all());
+
         $aufsicht = DB::table('supervision_time_slots')->where('exam_period_id', $periode->id)->get();
-        $this->assertCount(30, $aufsicht);
+        $this->assertCount(27, $aufsicht);
         $this->assertSame(0, $aufsicht->whereNull('supervision_grid_id')->count());
 
         $this->assertSame(2, DB::table('written_exam_supervision_grids')->count());
         $this->assertSame(16, DB::table('written_exam_supervision_time_slots')->count());
+    }
+
+    #[Test]
+    public function raeume_der_kolloquien_sind_an_jedem_tag_vorbelegt(): void
+    {
+        $this->createTestSchool();
+        $periode = DB::table('exam_periods')->orderByDesc('year')->first();
+
+        $eintraege = DB::table('oral_exam_day_rooms as o')
+            ->join('rooms as r', 'r.id', '=', 'o.room_id')
+            ->where('o.exam_period_id', $periode->id)
+            ->get(['o.date', 'o.room_role', 'r.room_number']);
+
+        $tage = DB::table('time_slots')->where('exam_period_id', $periode->id)->distinct()->pluck('date')
+            ->map(fn ($d) => substr((string) $d, 0, 10))->sort()->values()->all();
+
+        // Globale Vorgabe plus jeder Prüfungstag mit denselben 13 Räumen.
+        $jeTag = $eintraege->groupBy(fn ($e) => substr((string) $e->date, 0, 10));
+        $this->assertSame(array_merge(['1900-01-01'], $tage), $jeTag->keys()->sort()->values()->all());
+
+        foreach ($jeTag as $datum => $raeume) {
+            $this->assertSame(
+                Grundausstattung::KOLLOQUIUMSRAEUME,
+                $raeume->sortBy('room_number')->pluck('room_role', 'room_number')->all(),
+                $datum,
+            );
+        }
+
+        $vorgabe = $jeTag['1900-01-01']->countBy('room_role')->all();
+        $this->assertSame(['exam' => 11, 'preparation' => 1, 'waiting' => 1], $vorgabe);
     }
 
     #[Test]
@@ -75,8 +114,10 @@ class GrundausstattungTest extends TenantTestCase
         $tage = DB::table('time_slots')->where('exam_period_id', $periode->id)->distinct()->pluck('date')
             ->map(fn ($d) => substr((string) $d, 0, 10))->all();
 
-        $this->assertCount(9, $tage);
+        // 10 Tage − Himmelfahrt − Freitag der zweiten Woche.
+        $this->assertCount(8, $tage);
         $this->assertNotContains('2028-05-25', $tage);
+        $this->assertNotContains('2028-06-02', $tage);
     }
 
     #[Test]
