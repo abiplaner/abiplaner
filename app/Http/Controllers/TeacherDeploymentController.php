@@ -36,9 +36,13 @@ class TeacherDeploymentController extends Controller
 
         // --- Schüleranzahl pro Kursleiter (Erstkorrektur) in schriftl. Prüfungen ---
         // Aggregation direkt in der DB: gezählte StudentExams je course->teacher_id
+        // Nur Q13: Im selben Zeitraum stehen auch die schriftlichen Prüfungen
+        // (künftigen Abiturfächer) der Q12 — die korrigiert niemand.
         $writtenCounts = \Illuminate\Support\Facades\DB::table('student_exams')
             ->join('courses', 'courses.id', '=', 'student_exams.course_id')
+            ->join('students', 'students.id', '=', 'student_exams.student_id')
             ->where('courses.exam_period_id', $zeitraumId)
+            ->where(fn ($q) => $q->where('students.grade', '13')->orWhereNull('students.grade'))
             ->where('student_exams.exam_type', 'written')
             ->whereNotNull('courses.teacher_id')
             ->selectRaw('courses.teacher_id, COUNT(*) as cnt')
@@ -54,6 +58,7 @@ class TeacherDeploymentController extends Controller
         // --- Zweitkorrektur: Anzahl Kurse als second_corrector ---
         $secondCourses = Course::whereNotNull('second_corrector_id')
             ->where('exam_period_id', $zeitraumId)
+            ->derStufe('13')
             ->select('second_corrector_id')
             ->get();
 

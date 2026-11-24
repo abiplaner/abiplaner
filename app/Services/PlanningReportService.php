@@ -55,7 +55,7 @@ class PlanningReportService
     private function buildSummary(ExamPeriod $examPeriod, array $planningResult): array
     {
         /** @var \Illuminate\Support\Collection<int, Student> $studentsWithExams */
-        $studentsWithExams = $examPeriod->students()->with('exams')->get();
+        $studentsWithExams = Student::where('exam_period_id', $examPeriod->id)->derStufe('13')->with('exams')->get();
         $totalExams = $studentsWithExams->sum(fn(Student $s) => $s->exams->count());
             
         $scheduled = $planningResult['scheduled'] ?? $planningResult['stats']['exams_scheduled'] ?? 0;

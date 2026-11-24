@@ -17,6 +17,7 @@ class CouplingController extends Controller
         // Nur mündliche Prüfungen (Kolloquien) können gekoppelt werden
         $studentExams = StudentExam::where('course_id', $course->id)
             ->where('exam_type', 'oral')
+            ->derStufe('13')
             ->with(['student', 'assignment'])
             ->orderBy('coupling_id')
             ->orderBy('id')

@@ -37,7 +37,9 @@ class DashboardController extends Controller
 
         $stats = [];
         if ($activeExamPeriod) {
-            $studentIds = $activeExamPeriod->students()->pluck('id');
+            // Nur der Abiturjahrgang: Im Zeitraum stehen auch Q11 und Q12,
+            // die Q12 mit Prüfungen in ihren künftigen Abiturfächern.
+            $studentIds = \App\Models\Student::where('exam_period_id', $activeExamPeriod->id)->derStufe('13')->pluck('id');
 
             // --- Mündliche Prüfungen ---
             $totalOralExams = \App\Models\StudentExam::whereIn('student_id', $studentIds)
@@ -81,10 +83,10 @@ class DashboardController extends Controller
                 ->count();
 
             $stats = [
-                'total_students'        => $activeExamPeriod->students()->count(),
+                'total_students'        => $studentIds->count(),
                 'total_teachers'        => Teacher::count(),
                 'total_rooms'           => Room::count(),
-                'total_courses'         => Course::where('exam_period_id', $activeExamPeriod->id)->count(),
+                'total_courses'         => Course::where('exam_period_id', $activeExamPeriod->id)->derStufe('13')->count(),
                 // Mündlich
                 'oral_exams'            => $totalOralExams,
                 'oral_planned'          => $plannedOralExams,

@@ -1575,7 +1575,7 @@ class PlanningController extends Controller
 
         // Alle regulären Schüler des Prüfungszeitraums alphabetisch laden
         $students = \App\Models\Student::where('exam_period_id', $examPeriod->id)
-            ->where('grade', '!=', '11')
+            ->derStufe('13')
             ->orderBy('lastname')
             ->orderBy('firstname')
             ->with([
@@ -1687,7 +1687,7 @@ class PlanningController extends Controller
                 ->imPruefungszeitraum($examPeriod)
                 ->where(fn($q) => $q
                     ->whereDoesntHave('student')
-                    ->orWhereHas('student', fn($s) => $s->where('grade', '!=', '11'))
+                    ->orWhereHas('student', fn($s) => $s->derStufe('13'))
                 )
                 ->with([
                     'student', 'assignment.timeSlot',

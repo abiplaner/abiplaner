@@ -29,8 +29,8 @@ class CoursesColloquiumSheet extends DefaultValueBinder implements WithCustomVal
 
     public function collection(): \Illuminate\Support\Collection
     {
-        $courses = Course::where('exam_period_id', $this->examPeriod->id)
-            ->with(['subject', 'teacher', 'studentExams.assessor'])
+        $courses = Course::where('exam_period_id', $this->examPeriod->id)->derStufe('13')
+            ->with(['studentExams' => fn ($q) => $q->derStufe('13'), 'subject', 'teacher', 'studentExams.assessor'])
             ->orderBy('course_code')
             ->get();
 

@@ -24,8 +24,8 @@ class CourseController extends Controller
         }
         
         // Kurse der eigenen Schule für diesen Prüfungszeitraum
-        $courses = Course::where('exam_period_id', $examPeriod->id)
-            ->with(['subject', 'teacher', 'secondCorrector', 'studentExams.student', 'studentExams.assessor', 'studentExams.secondCorrector'])
+        $courses = Course::where('exam_period_id', $examPeriod->id)->derStufe('13')
+            ->with(['studentExams' => fn ($q) => $q->derStufe('13'), 'subject', 'teacher', 'secondCorrector', 'studentExams.student', 'studentExams.assessor', 'studentExams.secondCorrector'])
             ->orderBy('course_code')
             ->get()
             /** @phpstan-ignore argument.type */
@@ -401,8 +401,8 @@ class CourseController extends Controller
             return redirect()->route('dashboard')->with('error', 'Kein Prüfungszeitraum gefunden.');
         }
 
-        $courses = \App\Models\Course::where('exam_period_id', $examPeriod->id)
-            ->with(['subject', 'teacher', 'secondCorrector', 'studentExams.secondCorrector'])
+        $courses = \App\Models\Course::where('exam_period_id', $examPeriod->id)->derStufe('13')
+            ->with(['studentExams' => fn ($q) => $q->derStufe('13'), 'subject', 'teacher', 'secondCorrector', 'studentExams.secondCorrector'])
             ->orderBy('course_code')
             ->get()
             ->map(function ($course) {
@@ -465,8 +465,8 @@ class CourseController extends Controller
         }
 
         // Kurse der eigenen Schule für diesen Prüfungszeitraum
-        $courses = \App\Models\Course::where('exam_period_id', $examPeriod->id)
-            ->with(['subject', 'teacher', 'studentExams.student', 'studentExams.assessor'])
+        $courses = \App\Models\Course::where('exam_period_id', $examPeriod->id)->derStufe('13')
+            ->with(['studentExams' => fn ($q) => $q->derStufe('13'), 'subject', 'teacher', 'studentExams.student', 'studentExams.assessor'])
             ->orderBy('course_code')
             ->get()
             ->map(function ($course) {
@@ -519,8 +519,8 @@ class CourseController extends Controller
     private function buildCombinedExportData(\App\Models\ExamPeriod $examPeriod): array
     {
         // ---- 1. Schriftliche Prüfungen ----
-        $writtenCourses = \App\Models\Course::where('exam_period_id', $examPeriod->id)
-            ->with(['subject', 'teacher', 'studentExams.secondCorrector'])
+        $writtenCourses = \App\Models\Course::where('exam_period_id', $examPeriod->id)->derStufe('13')
+            ->with(['studentExams' => fn ($q) => $q->derStufe('13'), 'subject', 'teacher', 'studentExams.secondCorrector'])
             ->orderBy('course_code')
             ->get()
             ->map(function ($course) {
@@ -549,8 +549,8 @@ class CourseController extends Controller
             ->values();
 
         // ---- 2. Kolloquien ----
-        $oralCourses = \App\Models\Course::where('exam_period_id', $examPeriod->id)
-            ->with(['subject', 'teacher', 'studentExams.assessor'])
+        $oralCourses = \App\Models\Course::where('exam_period_id', $examPeriod->id)->derStufe('13')
+            ->with(['studentExams' => fn ($q) => $q->derStufe('13'), 'subject', 'teacher', 'studentExams.assessor'])
             ->orderBy('course_code')
             ->get()
             ->map(function ($course) {

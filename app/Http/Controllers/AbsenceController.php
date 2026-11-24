@@ -86,7 +86,10 @@ class AbsenceController extends Controller
         // Perioden-Audit (Modul 1.1): nur Schüler der gewählten Periode —
         // sonst tauchten nach dem Jahreswechsel die Alt-Jahrgänge (mit
         // geleerten Absenzen) doppelt in der Liste auf.
-        $students = Student::abiturGrades()
+        // Absenzen sind nur für den Abiturjahrgang relevant (Q13). abiturGrades()
+        // filterte über class_name, die der Import nicht setzt — so standen
+        // seit dem Q12-Import vom 24.11.2026 beide Stufen in der Liste.
+        $students = Student::derStufe('13')
             ->where('exam_period_id', app(\App\Services\CurrentExamPeriodService::class)->currentId())
             ->orderBy('lastname')
             ->orderBy('firstname')

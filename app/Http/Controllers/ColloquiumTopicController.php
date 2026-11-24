@@ -43,6 +43,7 @@ class ColloquiumTopicController extends Controller
 
         $courses = Course::with(['subject', 'teacher', 'colloquiumTopics'])
             ->where('exam_period_id', $examPeriod->id)
+            ->derStufe('13')
             ->get()
             ->sortBy('course_code');
 
@@ -162,10 +163,11 @@ class ColloquiumTopicController extends Controller
                 'teacher',
                 'colloquiumTopics',
                 'studentExams' => function ($query): void {
-                    $query->where('exam_type', 'oral')->with(['student', 'examiner']);
+                    $query->where('exam_type', 'oral')->derStufe('13')->with(['student', 'examiner']);
                 },
             ])
             ->where('exam_period_id', $examPeriod->id)
+            ->derStufe('13')
             ->get()
             ->filter(fn (Course $course): bool => $course->studentExams->isNotEmpty()
                 && $course->colloquiumTopics->isNotEmpty())
@@ -200,11 +202,13 @@ class ColloquiumTopicController extends Controller
                 'colloquiumTopics',
                 'studentExams' => function ($query): void {
                     $query->where('exam_type', 'oral')
+                        ->derStufe('13')
                         ->with('student')
                         ->orderBy('id');
                 },
             ])
             ->where('exam_period_id', $examPeriod->id)
+            ->derStufe('13')
             ->get()
             ->filter(fn (Course $course): bool => $course->studentExams->isNotEmpty())
             ->sortBy('course_code')
@@ -252,6 +256,7 @@ class ColloquiumTopicController extends Controller
 
         $courses = Course::whereIn('id', $courseIds)
             ->where('exam_period_id', $examPeriod->id)
+            ->derStufe('13')
             ->get();
 
         $totalGroups = 0;

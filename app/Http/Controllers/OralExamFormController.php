@@ -67,9 +67,9 @@ class OralExamFormController extends Controller
      */
     public function getFachausschuesseRows(ExamPeriod $examPeriod): array
     {
-        $courses = Course::where('exam_period_id', $examPeriod->id)
+        $courses = Course::where('exam_period_id', $examPeriod->id)->derStufe('13')
             ->with(['studentExams' => function($q) {
-                $q->where('exam_type', 'oral')->with(['examiner', 'assessor']);
+                $q->where('exam_type', 'oral')->derStufe('13')->with(['examiner', 'assessor']);
             }])
             ->orderBy('course_code')
             ->get();

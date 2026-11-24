@@ -146,7 +146,7 @@ class ExamPlanningService
      */
     private function validateExamPeriod(ExamPeriod $examPeriod): void
     {
-        $studentCount = $examPeriod->students()->count();
+        $studentCount = \App\Models\Student::where('exam_period_id', $examPeriod->id)->derStufe('13')->count();
         if ($studentCount === 0) {
             throw new \Exception('Keine Schüler im Prüfungszeitraum vorhanden.');
         }

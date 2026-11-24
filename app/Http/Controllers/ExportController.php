@@ -947,7 +947,9 @@ class ExportController extends Controller
             // Bewusst nur Schüler: die Abfrage sammelt course_id ein, und
             // externe Bewerber haben keinen Kurs.
             $writtenExamCourseIds = \App\Models\StudentExam::where('exam_type', 'written')
-                ->whereHas('student', fn($q) => $q->where('exam_period_id', $activePeriod !== null ? $activePeriod->id : 0))
+                // Nur Q13 — die Q12 hat im selben Zeitraum schriftliche
+                // Prüfungen in ihren künftigen Abiturfächern.
+                ->whereHas('student', fn($q) => $q->where('exam_period_id', $activePeriod !== null ? $activePeriod->id : 0)->derStufe('13'))
                 ->pluck('course_id')->unique()->filter();
 
             $courses = \App\Models\Course::whereIn('id', $writtenExamCourseIds)

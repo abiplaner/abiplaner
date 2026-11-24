@@ -29,8 +29,8 @@ class CoursesWrittenSheet extends DefaultValueBinder implements WithCustomValueB
 
     public function collection(): \Illuminate\Support\Collection
     {
-        $courses = Course::where('exam_period_id', $this->examPeriod->id)
-            ->with(['subject', 'teacher', 'studentExams.secondCorrector'])
+        $courses = Course::where('exam_period_id', $this->examPeriod->id)->derStufe('13')
+            ->with(['studentExams' => fn ($q) => $q->derStufe('13'), 'subject', 'teacher', 'studentExams.secondCorrector'])
             ->orderBy('course_code')
             ->get();
 

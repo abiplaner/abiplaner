@@ -49,14 +49,15 @@ class ValidationService
             'errors' => $errors,
             'warnings' => $warnings,
             'stats' => [
-                // Nicht über imPruefungszeitraum(), weil hier zusätzlich die
-                // Jahrgangsstufe 11 ausgenommen wird — eine Bedingung, die es
-                // nur am Schüler gibt. Externe Bewerber haben keine
+                // Nur der Abiturjahrgang (Q13): Q11 und Q12 stehen im selben
+                // Zeitraum, die Q12 sogar mit mündlichen Prüfungen (ihren
+                // künftigen Abiturfächern). Bis 24.11.2026 hieß es hier nur
+                // „nicht Q11“ und die Q12 zählte mit. Externe Bewerber haben keine
                 // Jahrgangsstufe und zählen deshalb immer mit.
                 'total_exams' => StudentExam::where(function ($q) use ($examPeriod) {
                     $q->whereHas('student', function ($sq) use ($examPeriod) {
                         $sq->where('exam_period_id', $examPeriod->id)
-                           ->where('grade', '!=', '11');
+                           ->derStufe('13');
                     })->orWhereHas(
                         'externalExamSubject.externalApplicant',
                         fn ($sq) => $sq->where('exam_period_id', $examPeriod->id)
@@ -83,7 +84,7 @@ class ValidationService
                      ->where('student_exams.exam_type', '=', 'oral'); // Nur mündliche Prüfungen zählen
             })
             ->where('students.exam_period_id', $examPeriod->id)
-            ->where('students.grade', '!=', '11')
+            ->where(fn ($q) => $q->where('students.grade', '13')->orWhereNull('students.grade'))
             ->groupBy('students.id', 'students.firstname', 'students.lastname')
             ->havingRaw('COUNT(student_exams.id) != 2')
             ->select('students.id', 'students.firstname', 'students.lastname', DB::raw('COUNT(student_exams.id) as exam_count'))

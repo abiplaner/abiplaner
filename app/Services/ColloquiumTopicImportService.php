@@ -209,7 +209,7 @@ class ColloquiumTopicImportService
      */
     private function coursesByCode(int $examPeriodId): array
     {
-        $courses = Course::where('exam_period_id', $examPeriodId)->get();
+        $courses = Course::where('exam_period_id', $examPeriodId)->derStufe('13')->get();
 
         $indexed = [];
         foreach ($courses as $course) {

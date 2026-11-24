@@ -33,8 +33,11 @@ class CouplingLetterService
      */
     public function apply(Course $course, array $letters): array
     {
+        // Nur Q13: Ein jahrgangsübergreifender Kurs („3…“) hat auch
+        // Kolloquien der Q12, die das Formular nicht zeigt.
         $exams = StudentExam::where('course_id', $course->id)
             ->where('exam_type', 'oral')
+            ->derStufe('13')
             ->get()
             ->keyBy('id');
 
@@ -57,6 +60,7 @@ class CouplingLetterService
             // maßgeblich, ein Korrekturlauf darf alte Gruppen nicht stehen lassen.
             StudentExam::where('course_id', $course->id)
                 ->where('exam_type', 'oral')
+                ->derStufe('13')
                 ->update(['coupling_id' => null]);
 
             foreach ($byLetter as $examIds) {

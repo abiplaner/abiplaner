@@ -35,8 +35,8 @@ class FachausschuesseExport extends DefaultValueBinder implements
 
     public function collection(): \Illuminate\Support\Collection
     {
-        $courses = Course::where('exam_period_id', $this->examPeriod->id)
-            ->with(['subject', 'teacher', 'secondCorrector', 'studentExams'])
+        $courses = Course::where('exam_period_id', $this->examPeriod->id)->derStufe('13')
+            ->with(['subject', 'teacher', 'secondCorrector', 'studentExams' => fn ($q) => $q->derStufe('13')])
             ->orderBy('course_code')
             ->get();
 

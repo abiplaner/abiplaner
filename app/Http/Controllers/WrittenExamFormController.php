@@ -57,8 +57,8 @@ class WrittenExamFormController extends Controller
         $examPeriods = app(CurrentExamPeriodService::class)->all();
 
         // ── Fachausschüsse-Daten ermitteln ──
-        $courses = Course::where('exam_period_id', $examPeriod->id)
-            ->with(['teacher', 'secondCorrector', 'studentExams'])
+        $courses = Course::where('exam_period_id', $examPeriod->id)->derStufe('13')
+            ->with(['teacher', 'secondCorrector', 'studentExams' => fn ($q) => $q->derStufe('13')])
             ->orderBy('course_code')
             ->get();
 
@@ -481,8 +481,8 @@ class WrittenExamFormController extends Controller
         $examPeriod = $this->resolveExamPeriod($request);
         $school     = School::first();
 
-        $courses = Course::where('exam_period_id', $examPeriod->id)
-            ->with(['teacher', 'secondCorrector', 'studentExams'])
+        $courses = Course::where('exam_period_id', $examPeriod->id)->derStufe('13')
+            ->with(['teacher', 'secondCorrector', 'studentExams' => fn ($q) => $q->derStufe('13')])
             ->orderBy('course_code')
             ->get();
 

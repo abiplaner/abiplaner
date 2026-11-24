@@ -56,7 +56,9 @@ class WrittenExamDateController extends Controller
      *
      * Kurse hängen am Prüfungszeitraum, Termine am Jahr. Ohne diesen Filter
      * standen beim Abitur 2027 auch die Kurse des Abiturs 2026 (Codes „2…“)
-     * in der Terminübersicht — sie sahen aus wie Kurse der Q12.
+     * in der Terminübersicht. Zusätzlich filtern die Abfragen mit derStufe('13'):
+     * Im selben Zeitraum stehen auch die Kurse der Q12 mit schriftlichen
+     * Prüfungen (ihren künftigen Abiturfächern).
      * Gibt es zum Jahr keinen Zeitraum, liefert die Methode 0 und die Abfrage
      * damit keine Kurse (null würde zu „IS NULL“).
      */
@@ -120,6 +122,7 @@ class WrittenExamDateController extends Controller
                 // Kurse des Prüfungszeitraums für die eligible-Berechnung
                 $allCourses = Course::with(['subject'])
                     ->where('exam_period_id', $this->zeitraumIdFuerJahr((int) $activeYear))
+                    ->derStufe('13')
                     ->orderBy('course_code')
                     ->get();
 
@@ -192,6 +195,7 @@ class WrittenExamDateController extends Controller
         // Kurse des Prüfungszeitraums mit writtenStudents laden
         $allCourses = Course::with(['subject', 'writtenStudents'])
             ->where('exam_period_id', $this->zeitraumIdFuerJahr((int) $examYear))
+            ->derStufe('13')
             ->orderBy('course_code')
             ->get();
 
@@ -483,6 +487,7 @@ class WrittenExamDateController extends Controller
 
             $relevantCourses = Course::whereIn('subject_id', $subjectIds)
                 ->where('exam_period_id', $this->zeitraumIdFuerJahr((int) $writtenExamYearDate->exam_year))
+                ->derStufe('13')
                 ->where('level', $level)
                 ->with(['writtenStudents', 'subject'])
                 ->orderBy('course_code')
