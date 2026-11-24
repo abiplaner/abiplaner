@@ -2,25 +2,25 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <div class="flex items-center space-x-3">
-                <a href="{{ route('students.index') }}"
+                <a href="{{ route('students.index', ['stufe' => $stufe]) }}"
                    class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                     </svg>
                 </a>
                 <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                    Fächerübersicht – {{ $examPeriod->name }}
+                    Fächerübersicht Q{{ $stufe }} – {{ $examPeriod->name }}
                 </h2>
             </div>
             <div class="flex space-x-3">
-                <a href="{{ route('students.subjects.export.pdf') }}"
+                <a href="{{ route('students.subjects.export.pdf', ['stufe' => $stufe]) }}"
                    class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     PDF Export
                 </a>
-                <a href="{{ route('students.subjects.export.excel') }}"
+                <a href="{{ route('students.subjects.export.excel', ['stufe' => $stufe]) }}"
                    class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -33,6 +33,8 @@
 
     <div class="py-12">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
+
+            <x-stufen-umschalter route="students.subjects" :stufe="$stufe" :anzahl="$anzahlJeStufe" />
 
             @if($subjectStats->isEmpty())
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">

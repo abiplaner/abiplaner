@@ -95,7 +95,7 @@
         @if($school)
             <strong>{{ $school->name }}</strong><br>
         @endif
-        Prüfungszeitraum: {{ $examPeriod->name }}<br>
+        Prüfungszeitraum: {{ $examPeriod->name }} · Jahrgangsstufe Q{{ $stufe ?? '13' }}<br>
         Erstellt am: {{ now()->format('d.m.Y H:i') }} Uhr
     </div>
     
