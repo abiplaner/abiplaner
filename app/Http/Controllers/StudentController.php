@@ -18,14 +18,22 @@ class StudentController extends Controller
     /**
      * Display an alphabetical listing of all students with their exam data.
      */
-    public function index()
+    public function index(Request $request)
     {
         $examPeriod = $this->getCurrentExamPeriod();
 
         if (!$examPeriod) {
             return $this->redirectNoExamPeriod();
         }
-        
+
+        $stufe = $this->gewaehlteStufe($request);
+
+        // Anzahl je Stufe für die Knöpfe des Umschalters
+        $anzahlJeStufe = [
+            '13' => $this->schuelerDerStufe($examPeriod->id, '13')->count(),
+            '12' => $this->schuelerDerStufe($examPeriod->id, '12')->count(),
+        ];
+
         // ===== Schüler mit Problemen sammeln =====
         $studentsWithProblems = [];
         
@@ -104,9 +112,14 @@ class StudentController extends Controller
             ];
         }
         
-        // Lade alle Schüler des aktuellen Prüfungszeitraums (nur Abiturjahrgangstufen 12 & 13)
-        $students = Student::where('exam_period_id', $examPeriod->id)
-            ->abiturGrades()
+        // Die Prüfungszahlen gelten nur für den Abiturjahrgang. In der Q12
+        // stehen Abiturfächer, aber noch keine vollständigen Prüfungen.
+        if ($stufe !== '13') {
+            $studentsWithProblems = [];
+        }
+
+        // Schüler der gewählten Jahrgangsstufe des aktuellen Prüfungszeitraums
+        $students = $this->schuelerDerStufe($examPeriod->id, $stufe)
             ->with([
                 'exams.course.subject', 
                 'exams.examiner', 
@@ -126,7 +139,32 @@ class StudentController extends Controller
             ->sort()
             ->values();
 
-        return view('students.index', compact('examPeriod', 'students', 'studentsWithProblems', 'filterSubjects'));
+        return view('students.index', compact('examPeriod', 'students', 'studentsWithProblems', 'filterSubjects', 'stufe', 'anzahlJeStufe'));
+    }
+
+    /**
+     * Jahrgangsstufe der Schülerliste aus ?stufe=; Vorgabe ist die Q13.
+     */
+    private function gewaehlteStufe(Request $request): string
+    {
+        return $request->query('stufe') === '12' ? '12' : '13';
+    }
+
+    /**
+     * Schüler einer Jahrgangsstufe im Prüfungszeitraum.
+     *
+     * Zur Q13 zählen auch Schüler ohne Stufe — so legen ältere Datensätze und
+     * die Tests sie an, wie in StudentExam::scopeImPruefungszeitraum().
+     *
+     * @return \Illuminate\Database\Eloquent\Builder<Student>
+     */
+    private function schuelerDerStufe(int $examPeriodId, string $stufe): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = Student::where('exam_period_id', $examPeriodId);
+
+        return $stufe === '13'
+            ? $query->where(fn ($q) => $q->where('grade', '13')->orWhereNull('grade'))
+            : $query->where('grade', $stufe);
     }
 
     /**
@@ -360,7 +398,7 @@ class StudentController extends Controller
     /**
      * Export students as PDF.
      */
-    public function exportPdf()
+    public function exportPdf(Request $request)
     {
         ini_set('memory_limit', '512M');
 
@@ -371,9 +409,9 @@ class StudentController extends Controller
         }
 
         $school = $this->getSchoolForUser();
+        $stufe  = $this->gewaehlteStufe($request);
 
-        $students = Student::where('exam_period_id', $examPeriod->id)
-            ->abiturGrades()
+        $students = $this->schuelerDerStufe($examPeriod->id, $stufe)
             ->with([
                 'exams.course.subject',
                 'exams.examiner',
@@ -387,16 +425,16 @@ class StudentController extends Controller
             ->get()
             ->map(fn($student) => $this->buildStudentExamData($student, false));
 
-        $pdf = Pdf::loadView('students.pdf', compact('examPeriod', 'school', 'students'))
+        $pdf = Pdf::loadView('students.pdf', compact('examPeriod', 'school', 'students', 'stufe'))
             ->setPaper('a4', 'landscape');
 
-        return $pdf->download('schuelerliste-' . $examPeriod->name . '.pdf');
+        return $pdf->download('schuelerliste-q' . $stufe . '-' . $examPeriod->name . '.pdf');
     }
 
     /**
      * Export students as Excel.
      */
-    public function exportExcel()
+    public function exportExcel(Request $request)
     {
         $examPeriod = $this->getCurrentExamPeriod();
 
@@ -404,9 +442,11 @@ class StudentController extends Controller
             return $this->redirectNoExamPeriod('students.index');
         }
 
+        $stufe = $this->gewaehlteStufe($request);
+
         return Excel::download(
-            new StudentsExport($examPeriod->id),
-            'schuelerliste-' . $examPeriod->name . '.xlsx'
+            new StudentsExport($examPeriod->id, $this->schuelerDerStufe($examPeriod->id, $stufe)->pluck('id')->all()),
+            'schuelerliste-q' . $stufe . '-' . $examPeriod->name . '.xlsx'
         );
     }
     

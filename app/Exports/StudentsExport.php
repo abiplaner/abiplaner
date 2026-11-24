@@ -16,12 +16,16 @@ class StudentsExport implements FromCollection, WithHeadings, WithMapping, WithS
     protected $students;
     protected $maxExams;
 
-    public function __construct($examPeriodId)
+    /**
+     * @param list<int>|null $studentIds Nur diese Schüler (z. B. eine Jahrgangsstufe); null = alle des Zeitraums
+     */
+    public function __construct($examPeriodId, ?array $studentIds = null)
     {
         $this->examPeriodId = $examPeriodId;
         
         // Lade Studenten mit allen Prüfungen
         $this->students = Student::where('exam_period_id', $examPeriodId)
+            ->when($studentIds !== null, fn ($q) => $q->whereIn('id', $studentIds))
             ->with([
                 'exams.course.subject', 
                 'exams.examiner',
