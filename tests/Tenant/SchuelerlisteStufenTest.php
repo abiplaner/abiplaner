@@ -78,6 +78,28 @@ class SchuelerlisteStufenTest extends TenantTestCase
         $antwort->assertSee(route('students.export.pdf', ['stufe' => '12']), false);
     }
 
+    /**
+     * Der gewählte Knopf ist markiert. Am 24.11.2026 war er es nie: PHP machte
+     * aus den Schlüsseln '13'/'12' Ganzzahlen, der Vergleich mit dem String
+     * $stufe schlug immer fehl.
+     */
+    #[Test]
+    public function der_knopf_der_gewaehlten_stufe_ist_markiert(): void
+    {
+        foreach (['13' => 'Q13 (Abiturjahrgang)', '12' => 'Q12'] as $stufe => $beschriftung) {
+            $html = $this->actingAs($this->planner)
+                ->get(route('students.index', ['stufe' => (string) $stufe]))
+                ->getContent();
+
+            $this->assertSame(1, substr_count((string) $html, 'aria-current="page"'), "Q{$stufe}: genau ein Knopf markiert");
+            $this->assertMatchesRegularExpression(
+                '~aria-current="page"[^>]*>(?:(?!</a>).)*' . preg_quote($beschriftung, '~') . '~s',
+                (string) $html,
+                "Q{$stufe}: der markierte Knopf ist der richtige"
+            );
+        }
+    }
+
     #[Test]
     public function eine_unbekannte_stufe_faellt_auf_die_q13_zurueck(): void
     {
