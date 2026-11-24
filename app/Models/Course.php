@@ -32,6 +32,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
  * @property-read int|null $written_exam_assignments_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Student> $writtenStudents
  * @property-read int|null $written_students_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Course derStufe(string $stufe)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Course newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Course newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Course query()
@@ -100,7 +101,12 @@ class Course extends Model
     }
 
     /**
-     * Nur Schüler mit schriftlicher Prüfung (exam_type = 'written') in diesem Kurs.
+     * Schüler der Q13 mit schriftlicher Abiturprüfung in diesem Kurs.
+     *
+     * Grundlage für Raumzuordnung, Sitzpläne und Raumlisten. Die Q12 hat im
+     * selben Prüfungszeitraum ebenfalls schriftliche Prüfungen (ihre
+     * künftigen Abiturfächer) — in jahrgangsübergreifenden Kursen säßen sie
+     * sonst mit im Prüfungsraum.
      */
     public function writtenStudents(): HasManyThrough
     {
@@ -111,7 +117,41 @@ class Course extends Model
             'id',
             'id',
             'student_id'
-        )->where('student_exams.exam_type', 'written');
+        )->where('student_exams.exam_type', 'written')
+            ->where(fn ($q) => $q->where('students.grade', '13')->orWhereNull('students.grade'));
+    }
+
+    /**
+     * Scope: Kurse einer Jahrgangsstufe ('13' oder '12').
+     *
+     * Ein Kurs trägt keine Stufe. Seit Q12 und Q13 im selben Prüfungszeitraum
+     * stehen (Abitur 2027: 59 Kurse „1…“, 57 „2…“), entscheidet die Stufe
+     * seiner Schüler — nicht das Präfix, das ist die Kursbenennung der
+     * Schule.
+     *
+     * Ein Kurs gehört zu einer Stufe, wenn er mindestens einen Schüler dieser
+     * Stufe hat. Jahrgangsübergreifende Kurse („3…“, z. B. 3l1 mit Q12 und
+     * Q13) gehören damit zu beiden — wer ihre Prüfungen lädt, muss sie mit
+     * StudentExam::scopeDerStufe() auf die Stufe beschränken.
+     *
+     * Zur Q13 zählt außerdem ein Kurs ganz ohne Prüfungen, so wie Schüler
+     * ohne Stufe zur Q13 zählen (Student::scopeDerStufe()).
+     *
+     * @param \Illuminate\Database\Eloquent\Builder<Course> $query
+     * @return \Illuminate\Database\Eloquent\Builder<Course>
+     */
+    public function scopeDerStufe($query, string $stufe)
+    {
+        $hatSchuelerDerStufe = fn ($q) => $q->whereHas(
+            'studentExams',
+            fn ($e) => $e->derStufe($stufe)
+        );
+
+        if ($stufe === '13') {
+            return $query->where(fn ($q) => $hatSchuelerDerStufe($q)->orWhereDoesntHave('studentExams'));
+        }
+
+        return $hatSchuelerDerStufe($query);
     }
 
     /**

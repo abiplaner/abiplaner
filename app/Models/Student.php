@@ -27,7 +27,7 @@ use Carbon\Carbon;
  * @property-read int|null $exams_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\StudentBlockedDay> $blockedDays
  * @property-read int|null $blocked_days_count
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Student abiturGrades()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Student derStufe(string $stufe)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Student newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Student newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Student query()
@@ -97,17 +97,18 @@ class Student extends Model
     
     
     /**
-     * Scope a query to only include students in Abitur grade levels (12 & 13)
+     * Scope: Schüler einer Jahrgangsstufe ('12' oder '13').
+     *
+     * Zur Q13 zählen auch Schüler ohne Stufe — so legen ältere Datensätze
+     * und die Tests sie an, wie in StudentExam::scopeImPruefungszeitraum().
      *
      * @param \Illuminate\Database\Eloquent\Builder $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function scopeAbiturGrades($query)
+    public function scopeDerStufe($query, string $stufe)
     {
-        return $query->where(function ($q) {
-            $q->where('class_name', 'LIKE', '12%')
-              ->orWhere('class_name', 'LIKE', '13%')
-              ->orWhereNull('class_name'); // Schüler ohne Klassenangabe einschließen
-        });
+        return $stufe === '13'
+            ? $query->where(fn ($q) => $q->where('grade', '13')->orWhereNull('grade'))
+            : $query->where('grade', $stufe);
     }
 }

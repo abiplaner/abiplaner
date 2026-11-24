@@ -24,6 +24,7 @@ use App\Models\WrittenExamYearDate;
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @method static \Illuminate\Database\Eloquent\Builder forAbiturStudentsOf(\App\Models\ExamPeriod $examPeriod)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|StudentExam derStufe(string $stufe)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StudentExam imPruefungszeitraum(\App\Models\ExamPeriod $examPeriod)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StudentExam desselbenPrueflings(\App\Models\StudentExam $exam)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StudentExam desPrueflings(string $schluessel)
@@ -354,19 +355,35 @@ class StudentExam extends Model
     }
 
     /**
-     * Scope: Nur Prüfungen von Abitur-Schülern (Klasse 12/13 oder ohne Klasse) eines Prüfungszeitraums.
-     * Eliminiert den redundanten whereHas-Block in SubjectStatsExport und StudentController.
+     * Scope: Prüfungen von Schülern einer Jahrgangsstufe ('13' oder '12').
+     *
+     * Für Kurse, deren Prüfungen man lädt: Jahrgangsübergreifende Kurse
+     * („3…“) haben Prüfungen beider Stufen. Prüfungen externer Bewerber
+     * (ohne Schüler) zählen zur Q13 — sie legen ihr Abitur jetzt ab.
+     */
+    public function scopeDerStufe($query, string $stufe)
+    {
+        if ($stufe === '13') {
+            return $query->where(fn ($q) => $q
+                ->whereHas('student', fn ($s) => $s->derStufe('13'))
+                ->orWhereNull('student_id'));
+        }
+
+        return $query->whereHas('student', fn ($s) => $s->derStufe($stufe));
+    }
+
+    /**
+     * Scope: Prüfungen der Schüler des Abiturjahrgangs (Q13) eines Prüfungszeitraums.
+     *
+     * Ohne externe Bewerber (dafür imPruefungszeitraum()). Früher über
+     * class_name 12%/13%/NULL — der Import setzt keine Klasse, also zählten
+     * Q12 und Q13 zusammen, seit beide im selben Zeitraum stehen (24.11.2026).
      */
     public function scopeForAbiturStudentsOf($query, ExamPeriod $examPeriod)
     {
-        return $query->whereHas('student', function ($q) use ($examPeriod) {
-            $q->where('exam_period_id', $examPeriod->id)
-              ->where(function ($q2) {
-                  $q2->where('class_name', 'LIKE', '12%')
-                     ->orWhere('class_name', 'LIKE', '13%')
-                     ->orWhereNull('class_name');
-              });
-        });
+        return $query->whereHas('student', fn ($q) => $q
+            ->where('exam_period_id', $examPeriod->id)
+            ->derStufe('13'));
     }
 
     /**
