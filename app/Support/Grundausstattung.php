@@ -9,8 +9,8 @@ namespace App\Support;
  * Nachgebildet dem Bestand der Pilotschule im Abitur 2026, aber mit
  * neutralen Namen — im öffentlichen Repo steht keine echte Raumnummer.
  * Die Struktur ist echt: drei baugleiche Klassenzimmer-Reihen, zwei kleine
- * Räume, ein Fachraum, Vorbereitungs- und Warteraum; Kolloquien Mo–Do
- * nachmittags, freitags vormittags.
+ * Räume, ein Fachraum, Vorbereitungs- und Warteraum; Kolloquien an allen
+ * Tagen nachmittags, der Freitag der zweiten Woche bleibt frei (24.11.2026).
  *
  * Eine Stelle für TenantSeeder (legt an) und SetupChecklistService (erkennt
  * die Vorgabenamen, solange sie unverändert dastehen).
@@ -78,8 +78,32 @@ final class Grundausstattung
     ];
 
     /**
-     * Kolloquiumsslots Mo–Do: nachmittags im 50-Minuten-Takt, je 30 Minuten
-     * Vorbereitung und Prüfung (Pilotschule 2026: 13:10–17:00).
+     * Räume der Kolloquien je Prüfungstag (Maske „Räume & Tage“), nach dem
+     * Abitur 2026 der Pilotschule: elf Prüfungsräume — die neun
+     * Klassenzimmer und die zwei kleinen Räume, nicht der Fachraum —, ein
+     * Vorbereitungs- und ein Warteraum; an jedem Tag dieselben.
+     *
+     * @var array<string, string> Raumnummer => Rolle (exam|preparation|waiting)
+     */
+    public const KOLLOQUIUMSRAEUME = [
+        'Raum 001' => 'exam',
+        'Raum 002' => 'exam',
+        'Raum 003' => 'exam',
+        'Raum 101' => 'exam',
+        'Raum 102' => 'exam',
+        'Raum 103' => 'exam',
+        'Raum 201' => 'exam',
+        'Raum 202' => 'exam',
+        'Raum 203' => 'exam',
+        'Raum 204' => 'exam',
+        'Raum 205' => 'exam',
+        'Raum 206' => 'preparation',
+        'Raum 207' => 'waiting',
+    ];
+
+    /**
+     * Kolloquiumsslots an allen Prüfungstagen: nachmittags im 50-Minuten-Takt,
+     * je 30 Minuten Vorbereitung und Prüfung (Pilotschule 2026: 13:10–17:00).
      *
      * @var array<int, array{0: string, 1: string, 2: string, 3: string}> Slot => [Vorb. von, bis, Prüfung von, bis]
      */
@@ -92,8 +116,9 @@ final class Grundausstattung
     ];
 
     /**
-     * Kolloquiumsslots am Freitag: vormittags im 70-Minuten-Takt
-     * (Pilotschule 2026: 08:30–13:40).
+     * Vormittagsraster im 70-Minuten-Takt (Pilotschule 2026: 08:30–13:40).
+     * Nur noch als Vorlage „Freitag (vormittags)“ für Schulen, die freitags
+     * vormittags prüfen; die vorbelegten Tage nutzen es nicht mehr.
      *
      * @var array<int, array{0: string, 1: string, 2: string, 3: string}>
      */
@@ -112,7 +137,7 @@ final class Grundausstattung
      * @var array<string, array{0: string, 1: bool, 2: list<int>}>
      */
     public const SLOT_VORLAGEN = [
-        'Normaler Wochentag (Mo–Do)' => ['Nachmittags, 5 Prüfungen von 13:10 bis 17:00', false, [120, 115, 110, 100, 90]],
+        'Normaler Prüfungstag (Mo–Fr)' => ['Nachmittags, 5 Prüfungen von 13:10 bis 17:00', false, [120, 115, 110, 100, 90]],
         'Freitag (vormittags)' => ['Vormittags, 5 Prüfungen von 08:30 bis 13:40', true, [100, 100, 100, 100, 100]],
         'Ausweichtag' => ['Tag, der nach Möglichkeit nicht genutzt werden soll', false, [85, 85, 80, 80, 70]],
     ];
@@ -120,11 +145,9 @@ final class Grundausstattung
     /** Gewichte der Slots an einem Kolloquiumstag, wie in der Vorlage. */
     public const GEWICHTE_WOCHENTAG = [1 => 120, 2 => 115, 3 => 110, 4 => 100, 5 => 90];
 
-    public const GEWICHT_FREITAG = 100;
-
     /**
-     * Aufsichtsfenster der Kolloquien (Warteraum, Flur). Mo–Do wie 2026;
-     * freitags auf den Vormittag gelegt, passend zu den Slots.
+     * Aufsichtsfenster der Kolloquien (Warteraum, Flur), an allen Tagen wie
+     * Mo–Do 2026.
      *
      * @var array<int, array{0: string, 1: string}>
      */
@@ -132,13 +155,6 @@ final class Grundausstattung
         1 => ['13:30:00', '14:30:00'],
         2 => ['14:30:00', '15:30:00'],
         3 => ['15:30:00', '16:40:00'],
-    ];
-
-    /** @var array<int, array{0: string, 1: string}> */
-    public const AUFSICHT_VORMITTAG = [
-        1 => ['08:20:00', '10:00:00'],
-        2 => ['10:00:00', '11:40:00'],
-        3 => ['11:40:00', '13:40:00'],
     ];
 
     /**
@@ -187,11 +203,5 @@ final class Grundausstattung
     public static function raumnummern(): array
     {
         return array_column(self::RAEUME, 0);
-    }
-
-    /** Freitage bekommen das Vormittagsraster. */
-    public static function istFreitag(string $datum): bool
-    {
-        return (int) date('N', (int) strtotime($datum)) === 5;
     }
 }

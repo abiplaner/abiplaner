@@ -20,9 +20,11 @@ use RuntimeException;
  *
  * - Prüfungsmaterialien,
  * - vier Sitzpläne und fünfzehn Räume, die Prüfungsräume mit Sitzplan,
- * - Zeitslot-Vorlagen (Wochentag, Freitag, Ausweichtag),
- * - die Kolloquiumsslots: Mo–Do nachmittags, freitags vormittags; Tage, die
- *   im bayernweiten Kalender Feiertag oder Ferien sind, bleiben frei,
+ * - Zeitslot-Vorlagen (Prüfungstag, Freitag vormittags, Ausweichtag),
+ * - die Kolloquiumsslots: an allen Tagen nachmittags; frei bleiben der
+ *   Freitag der zweiten Woche und Tage, die im bayernweiten Kalender
+ *   Feiertag oder Ferien sind (Stand 24.11.2026),
+ * - die Räume der Kolloquien je Tag (Maske „Räume & Tage“) wie 2026,
  * - die Aufsichtsfenster der Kolloquien mit einem Standardraster,
  * - die Aufsichtsraster der schriftlichen Prüfungen (Standard, Fremdsprachen).
  *
@@ -51,6 +53,7 @@ class TenantSeeder extends Seeder
         $this->seedRoomsAndSeating($now);
         $this->seedSlotTemplates((int) $examPeriod->id, $now);
         $this->seedTimeSlots((int) $examPeriod->id, $dates, $now);
+        $this->seedOralExamDayRooms((int) $examPeriod->id, $dates, $now);
         $this->seedSupervisionTimeSlots((int) $examPeriod->id, $dates, $now);
         $this->seedWrittenExamSupervisionGrids($now);
 
@@ -90,9 +93,10 @@ class TenantSeeder extends Seeder
     }
 
     /**
-     * Die Kolloquiumstage der beiden Prüfungswochen: Mo–Fr, ohne Tage, die im
-     * bayernweiten Kalender Feiertag oder Ferien sind (2028 etwa Christi
-     * Himmelfahrt mitten in der ersten Woche).
+     * Die Kolloquiumstage der beiden Prüfungswochen: Mo–Fr, ohne den Freitag
+     * der zweiten Woche und ohne Tage, die im bayernweiten Kalender Feiertag
+     * oder Ferien sind (2028 etwa Christi Himmelfahrt mitten in der ersten
+     * Woche).
      *
      * @return list<string> Datumswerte im Format Y-m-d
      */
@@ -100,12 +104,12 @@ class TenantSeeder extends Seeder
     {
         $dates = [];
 
-        foreach ([['week_1_start', 'week_1_end'], ['week_2_start', 'week_2_end']] as [$from, $to]) {
+        foreach ([1 => ['week_1_start', 'week_1_end'], 2 => ['week_2_start', 'week_2_end']] as $week => [$from, $to]) {
             $start = Carbon::parse($examPeriod->{$from})->startOfDay();
             $end = Carbon::parse($examPeriod->{$to})->startOfDay();
 
             for ($day = $start->copy(); $day->lessThanOrEqualTo($end); $day->addDay()) {
-                if ($day->isWeekend() || $this->isDayOff($day->toDateString())) {
+                if ($day->isWeekend() || ($week === 2 && $day->isFriday()) || $this->isDayOff($day->toDateString())) {
                     continue;
                 }
 
@@ -303,10 +307,7 @@ class TenantSeeder extends Seeder
         $rows = [];
 
         foreach ($dates as $date) {
-            $friday = Grundausstattung::istFreitag($date);
-            $times = $friday ? Grundausstattung::SLOTS_VORMITTAG : Grundausstattung::SLOTS_NACHMITTAG;
-
-            foreach ($times as $slotNumber => [$prepStart, $prepEnd, $examStart, $examEnd]) {
+            foreach (Grundausstattung::SLOTS_NACHMITTAG as $slotNumber => [$prepStart, $prepEnd, $examStart, $examEnd]) {
                 $rows[] = [
                     'exam_period_id' => $examPeriodId,
                     'date' => $date,
@@ -315,7 +316,7 @@ class TenantSeeder extends Seeder
                     'prep_end_time' => $prepEnd,
                     'exam_start_time' => $examStart,
                     'exam_end_time' => $examEnd,
-                    'preference_weight' => $friday ? Grundausstattung::GEWICHT_FREITAG : Grundausstattung::GEWICHTE_WOCHENTAG[$slotNumber],
+                    'preference_weight' => Grundausstattung::GEWICHTE_WOCHENTAG[$slotNumber],
                     'is_active' => true,
                     'notes' => null,
                     'created_at' => $now,
@@ -325,7 +326,60 @@ class TenantSeeder extends Seeder
         }
 
         DB::table('time_slots')->insert($rows);
-        $this->command->info('📅 ' . count($rows) . ' Zeitslots an ' . count($dates) . ' Tagen angelegt (Mo–Do nachmittags, Fr vormittags).');
+        $this->command->info('📅 ' . count($rows) . ' Zeitslots an ' . count($dates) . ' Tagen angelegt (nachmittags, ohne Freitag der zweiten Woche).');
+    }
+
+    /**
+     * Räume der Kolloquien (Maske „Räume & Tage“): wie im Abitur 2026 der
+     * Pilotschule als globale Vorgabe (Sentinel-Datum 1900-01-01) und an
+     * jedem Prüfungstag dieselben Räume. Die Aufsichtsplanung liest nur die
+     * tagesbezogenen Einträge, deshalb beide.
+     *
+     * Räume, deren Vorgabenamen die Schule schon geändert hat, fehlen hier
+     * einfach — eingetragen wird nur, was sich zuordnen lässt.
+     *
+     * @param list<string> $dates
+     */
+    private function seedOralExamDayRooms(int $examPeriodId, array $dates, Carbon $now): void
+    {
+        if (DB::table('oral_exam_day_rooms')->where('exam_period_id', $examPeriodId)->exists()) {
+            $this->command->info('🚪 Räume der Kolloquien bereits zugeordnet — übersprungen.');
+
+            return;
+        }
+
+        $roomIds = DB::table('rooms')
+            ->whereIn('room_number', array_keys(Grundausstattung::KOLLOQUIUMSRAEUME))
+            ->pluck('id', 'room_number');
+
+        $rows = [];
+
+        foreach (array_merge(['1900-01-01'], $dates) as $date) {
+            foreach (Grundausstattung::KOLLOQUIUMSRAEUME as $number => $role) {
+                if (!isset($roomIds[$number])) {
+                    continue;
+                }
+
+                $rows[] = [
+                    'exam_period_id' => $examPeriodId,
+                    'date' => $date,
+                    'room_id' => $roomIds[$number],
+                    'room_role' => $role,
+                    'sort_order' => 0,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+        }
+
+        if ($rows === []) {
+            $this->command->info('🚪 Keine Vorgaberäume gefunden — Räume der Kolloquien nicht zugeordnet.');
+
+            return;
+        }
+
+        DB::table('oral_exam_day_rooms')->insert($rows);
+        $this->command->info('🚪 ' . $roomIds->count() . ' Räume den Kolloquien zugeordnet (Vorgabe und ' . count($dates) . ' Tage).');
     }
 
     /**
@@ -356,11 +410,7 @@ class TenantSeeder extends Seeder
         $rows = [];
 
         foreach ($dates as $date) {
-            $windows = Grundausstattung::istFreitag($date)
-                ? Grundausstattung::AUFSICHT_VORMITTAG
-                : Grundausstattung::AUFSICHT_NACHMITTAG;
-
-            foreach ($windows as $slotNumber => [$start, $end]) {
+            foreach (Grundausstattung::AUFSICHT_NACHMITTAG as $slotNumber => [$start, $end]) {
                 $rows[] = [
                     'exam_period_id' => $examPeriodId,
                     'supervision_grid_id' => $gridId,
