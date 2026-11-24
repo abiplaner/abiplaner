@@ -312,6 +312,14 @@
                             <p class="text-xs text-blue-700 mt-1.5 ml-7">
                                 Beim Import werden nur Schüler dieser Jahrgangsstufe aktualisiert/ersetzt. Schüler, Kurse und Absenzen der anderen Jahrgangsstufe bleiben vollständig erhalten.
                             </p>
+                            <p class="text-xs text-blue-700 mt-1 ml-7">
+                                Kurse der Q12 beginnen mit „1“, Kurse der Q13 mit „2“, jahrgangsübergreifende mit „3“. Passt die Datei nicht zur gewählten Stufe, lehnt der Import sie ab.
+                            </p>
+                            @if(!empty($fremdeKurse))
+                                <p class="text-sm text-red-700 bg-red-50 border border-red-300 rounded px-3 py-2 mt-2 ml-7">
+                                    {{ $fremdeKurseMeldung }}
+                                </p>
+                            @endif
                         </div>
                         
                         <div class="flex items-center">
