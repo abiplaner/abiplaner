@@ -25,9 +25,15 @@ class SubjectStatsService
      *     erhoeht_written: int, erhoeht_oral: int, total: int
      * }>
      */
-    public function calculate(ExamPeriod $examPeriod): Collection
+    public function calculate(ExamPeriod $examPeriod, string $stufe = '13'): Collection
     {
-        $allExams = StudentExam::forAbiturStudentsOf($examPeriod)
+        // Eine Jahrgangsstufe. Vorher über forAbiturStudentsOf(), das über
+        // class_name filtert — der Import setzt keine Klasse, also zählten
+        // Q12 und Q13 zusammen.
+        $allExams = StudentExam::whereHas(
+                'student',
+                fn ($q) => $q->where('exam_period_id', $examPeriod->id)->derStufe($stufe)
+            )
             ->with(['course.subject', 'course'])
             ->get();
 

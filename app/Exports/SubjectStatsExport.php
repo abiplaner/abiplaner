@@ -19,16 +19,19 @@ class SubjectStatsExport implements FromCollection, WithHeadings, WithTitle, Wit
     protected $examPeriodId;
     protected int $dataRowCount = 0;
 
-    public function __construct($examPeriodId)
+    protected string $stufe;
+
+    public function __construct($examPeriodId, string $stufe = '13')
     {
         $this->examPeriodId = $examPeriodId;
+        $this->stufe        = $stufe;
     }
 
     public function collection(): \Illuminate\Support\Collection
     {
         $examPeriod = ExamPeriod::findOrFail($this->examPeriodId);
 
-        $subjectStats = app(\App\Services\SubjectStatsService::class)->calculate($examPeriod);
+        $subjectStats = app(\App\Services\SubjectStatsService::class)->calculate($examPeriod, $this->stufe);
 
         $this->dataRowCount = $subjectStats->count();
 

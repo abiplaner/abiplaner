@@ -28,11 +28,7 @@ class StudentController extends Controller
 
         $stufe = $this->gewaehlteStufe($request);
 
-        // Anzahl je Stufe für die Knöpfe des Umschalters
-        $anzahlJeStufe = [
-            '13' => $this->schuelerDerStufe($examPeriod->id, '13')->count(),
-            '12' => $this->schuelerDerStufe($examPeriod->id, '12')->count(),
-        ];
+        $anzahlJeStufe = $this->anzahlJeStufe($examPeriod->id);
 
         // ===== Schüler mit Problemen sammeln =====
         $studentsWithProblems = [];
@@ -151,26 +147,32 @@ class StudentController extends Controller
     }
 
     /**
-     * Schüler einer Jahrgangsstufe im Prüfungszeitraum.
-     *
-     * Zur Q13 zählen auch Schüler ohne Stufe — so legen ältere Datensätze und
-     * die Tests sie an, wie in StudentExam::scopeImPruefungszeitraum().
+     * Schüler einer Jahrgangsstufe im Prüfungszeitraum (siehe Student::scopeDerStufe()).
      *
      * @return \Illuminate\Database\Eloquent\Builder<Student>
      */
     private function schuelerDerStufe(int $examPeriodId, string $stufe): \Illuminate\Database\Eloquent\Builder
     {
-        $query = Student::where('exam_period_id', $examPeriodId);
+        return Student::where('exam_period_id', $examPeriodId)->derStufe($stufe);
+    }
 
-        return $stufe === '13'
-            ? $query->where(fn ($q) => $q->where('grade', '13')->orWhereNull('grade'))
-            : $query->where('grade', $stufe);
+    /**
+     * Schülerzahl je Stufe für die Knöpfe des Umschalters.
+     *
+     * @return array{13: int, 12: int}
+     */
+    private function anzahlJeStufe(int $examPeriodId): array
+    {
+        return [
+            '13' => $this->schuelerDerStufe($examPeriodId, '13')->count(),
+            '12' => $this->schuelerDerStufe($examPeriodId, '12')->count(),
+        ];
     }
 
     /**
      * Display a dedicated subject overview page.
      */
-    public function subjectOverview()
+    public function subjectOverview(Request $request)
     {
         $examPeriod = $this->getCurrentExamPeriod();
 
@@ -178,17 +180,18 @@ class StudentController extends Controller
             return $this->redirectNoExamPeriod();
         }
 
-        $subjectStats = $this->calculateSubjectStats($examPeriod);
-        $studentCount = Student::where('exam_period_id', $examPeriod->id)
-            ->abiturGrades()
-            ->count();
+        $stufe         = $this->gewaehlteStufe($request);
+        $anzahlJeStufe = $this->anzahlJeStufe($examPeriod->id);
+
+        $subjectStats = $this->calculateSubjectStats($examPeriod, $stufe);
+        $studentCount = $anzahlJeStufe[$stufe];
 
         // Bewusst nur Schüler (kein imPruefungszeitraum): die Zahlen darunter
-        // werden gegen $studentCount gehalten, und der zählt die
-        // Abiturjahrgänge. Externe Bewerber haben keine Jahrgangsstufe und
+        // werden gegen $studentCount gehalten, und der zählt eine
+        // Jahrgangsstufe. Externe Bewerber haben keine Jahrgangsstufe und
         // gehören nicht in diese Gegenüberstellung.
-        $allExams = StudentExam::whereHas('student', function ($q) use ($examPeriod) {
-            $q->where('exam_period_id', $examPeriod->id)->abiturGrades();
+        $allExams = StudentExam::whereHas('student', function ($q) use ($examPeriod, $stufe) {
+            $q->where('exam_period_id', $examPeriod->id)->derStufe($stufe);
         })->get();
 
         $actualWritten   = $allExams->where('exam_type', 'written')->count();
@@ -208,7 +211,7 @@ class StudentController extends Controller
             'oral_diff'        => $actualOral - $expectedOral,
         ];
 
-        return view('students.subjects', compact('examPeriod', 'subjectStats', 'plausibility'));
+        return view('students.subjects', compact('examPeriod', 'subjectStats', 'plausibility', 'stufe', 'anzahlJeStufe'));
     }
 
     /**
@@ -222,7 +225,9 @@ class StudentController extends Controller
             return $this->redirectNoExamPeriod();
         }
 
+        // Neue Schüler bekommen keine Stufe und zählen damit zur Q13.
         $courses = Course::where('exam_period_id', $examPeriod->id)
+            ->derStufe('13')
             ->with(['subject', 'teacher'])
             ->get()
             ->sortBy(fn($course) => $course->subject->name ?? '');
@@ -306,7 +311,9 @@ class StudentController extends Controller
 
         $student->load(['exams.course.subject', 'exams.course.teacher', 'blockedDays']);
 
+        // Nur Kurse der eigenen Stufe — Q12 und Q13 stehen im selben Zeitraum.
         $courses = Course::where('exam_period_id', $examPeriod->id)
+            ->derStufe($student->grade === '12' ? '12' : '13')
             ->with(['subject', 'teacher'])
             ->get()
             ->sortBy(fn($course) => $course->subject->name ?? '');
@@ -453,7 +460,7 @@ class StudentController extends Controller
     /**
      * Export subject statistics as PDF.
      */
-    public function exportSubjectsPdf()
+    public function exportSubjectsPdf(Request $request)
     {
         $examPeriod = $this->getCurrentExamPeriod();
 
@@ -462,18 +469,19 @@ class StudentController extends Controller
         }
 
         $school       = $this->getSchoolForUser();
-        $subjectStats = $this->calculateSubjectStats($examPeriod);
+        $stufe        = $this->gewaehlteStufe($request);
+        $subjectStats = $this->calculateSubjectStats($examPeriod, $stufe);
 
-        $pdf = Pdf::loadView('students.subjects-pdf', compact('examPeriod', 'school', 'subjectStats'))
+        $pdf = Pdf::loadView('students.subjects-pdf', compact('examPeriod', 'school', 'subjectStats', 'stufe'))
             ->setPaper('a4', 'portrait');
 
-        return $pdf->download('faecheruebersicht-' . $examPeriod->name . '.pdf');
+        return $pdf->download('faecheruebersicht-q' . $stufe . '-' . $examPeriod->name . '.pdf');
     }
     
     /**
      * Export subject statistics as Excel.
      */
-    public function exportSubjectsExcel()
+    public function exportSubjectsExcel(Request $request)
     {
         $examPeriod = $this->getCurrentExamPeriod();
 
@@ -481,9 +489,11 @@ class StudentController extends Controller
             return $this->redirectNoExamPeriod('students.index');
         }
 
+        $stufe = $this->gewaehlteStufe($request);
+
         return Excel::download(
-            new \App\Exports\SubjectStatsExport($examPeriod->id),
-            'faecheruebersicht-' . $examPeriod->name . '.xlsx'
+            new \App\Exports\SubjectStatsExport($examPeriod->id, $stufe),
+            'faecheruebersicht-q' . $stufe . '-' . $examPeriod->name . '.xlsx'
         );
     }
 
@@ -682,9 +692,9 @@ class StudentController extends Controller
      *
      * @return \Illuminate\Support\Collection
      */
-    private function calculateSubjectStats(ExamPeriod $examPeriod): \Illuminate\Support\Collection
+    private function calculateSubjectStats(ExamPeriod $examPeriod, string $stufe = '13'): \Illuminate\Support\Collection
     {
-        return app(\App\Services\SubjectStatsService::class)->calculate($examPeriod);
+        return app(\App\Services\SubjectStatsService::class)->calculate($examPeriod, $stufe);
     }
 
     /**
