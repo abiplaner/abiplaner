@@ -87,7 +87,7 @@
 </head>
 <body>
     <header>
-        <h1>Schülerliste</h1>
+        <h1>Schülerliste Q{{ $stufe ?? '13' }}</h1>
         <h2>{{ $examPeriod->name }} - {{ $school->name }}</h2>
     </header>
 

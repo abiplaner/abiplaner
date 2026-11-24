@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                {{ __('Schülerliste') }} - {{ $examPeriod->name }}
+                {{ __('Schülerliste') }} Q{{ $stufe }} - {{ $examPeriod->name }}
             </h2>
             <div class="flex space-x-3">
                 @unlessarchive
@@ -21,14 +21,14 @@
                     Importieren
                 </a>
                 @endarchive
-                <a href="{{ route('students.export.pdf') }}" 
+                <a href="{{ route('students.export.pdf', ['stufe' => $stufe]) }}" 
                    class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     PDF
                 </a>
-                <a href="{{ route('students.export.excel') }}" 
+                <a href="{{ route('students.export.excel', ['stufe' => $stufe]) }}" 
                    class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -69,6 +69,26 @@
                   $watch('subject',   () => updateCount());
                   $watch('activeTab', () => updateCount());">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+
+            {{-- Umschalter Jahrgangsstufe --}}
+            <div class="mb-4 flex items-center gap-3">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Jahrgangsstufe:</span>
+                <div class="flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
+                    @foreach(['13' => 'Q13 (Abiturjahrgang)', '12' => 'Q12'] as $s => $beschriftung)
+                        <a href="{{ route('students.index', ['stufe' => $s]) }}"
+                           @class([
+                               'px-4 py-2 text-sm font-medium flex items-center gap-2 transition-colors',
+                               'border-l border-gray-300 dark:border-gray-600' => !$loop->first,
+                               'bg-blue-600 text-white' => $stufe === $s,
+                               'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600' => $stufe !== $s,
+                           ])
+                           @if($stufe === $s) aria-current="page" @endif>
+                            {{ $beschriftung }}
+                            <span class="bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded text-xs">{{ $anzahlJeStufe[$s] }}</span>
+                        </a>
+                    @endforeach
+                </div>
+            </div>
 
             {{-- Warnungen --}}
             @if(!empty($studentsWithProblems))
