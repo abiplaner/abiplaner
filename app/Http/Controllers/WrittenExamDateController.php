@@ -51,6 +51,20 @@ class WrittenExamDateController extends Controller
         )->values();
     }
 
+    /**
+     * ID des Prüfungszeitraums zu einem Abiturjahr.
+     *
+     * Kurse hängen am Prüfungszeitraum, Termine am Jahr. Ohne diesen Filter
+     * standen beim Abitur 2027 auch die Kurse des Abiturs 2026 (Codes „2…“)
+     * in der Terminübersicht — sie sahen aus wie Kurse der Q12.
+     * Gibt es zum Jahr keinen Zeitraum, liefert die Methode 0 und die Abfrage
+     * damit keine Kurse (null würde zu „IS NULL“).
+     */
+    private function zeitraumIdFuerJahr(int $jahr): int
+    {
+        return (int) (\App\Models\ExamPeriod::where('year', $jahr)->value('id') ?? 0);
+    }
+
     // -------------------------------------------------------------------------
     // index – Übersicht
     // -------------------------------------------------------------------------
@@ -103,8 +117,9 @@ class WrittenExamDateController extends Controller
                     ->pluck('cnt', 'course_id');
                 $writtenCountByCourse = $counts->toArray();
 
-                // Alle Kurse für eligible-Berechnung
+                // Kurse des Prüfungszeitraums für die eligible-Berechnung
                 $allCourses = Course::with(['subject'])
+                    ->where('exam_period_id', $this->zeitraumIdFuerJahr((int) $activeYear))
                     ->orderBy('course_code')
                     ->get();
 
@@ -174,8 +189,9 @@ class WrittenExamDateController extends Controller
 
         $examYear = $yearDates->first()->exam_year;
 
-        // Alle Kurse mit writtenStudents laden
+        // Kurse des Prüfungszeitraums mit writtenStudents laden
         $allCourses = Course::with(['subject', 'writtenStudents'])
+            ->where('exam_period_id', $this->zeitraumIdFuerJahr((int) $examYear))
             ->orderBy('course_code')
             ->get();
 
@@ -466,6 +482,7 @@ class WrittenExamDateController extends Controller
             $level      = $writtenExamYearDate->slot->requirement_level;
 
             $relevantCourses = Course::whereIn('subject_id', $subjectIds)
+                ->where('exam_period_id', $this->zeitraumIdFuerJahr((int) $writtenExamYearDate->exam_year))
                 ->where('level', $level)
                 ->with(['writtenStudents', 'subject'])
                 ->orderBy('course_code')

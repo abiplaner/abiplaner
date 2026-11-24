@@ -27,10 +27,18 @@ class TeacherDeploymentController extends Controller
     {
         $teachers = Teacher::orderBy('lastname')->orderBy('firstname')->get();
 
+        // Alles nur für den laufenden Prüfungszeitraum. Vorher zählten die
+        // Kurse, Kolloquien und Aufsichten aller Abiturjahrgänge zusammen —
+        // beim Abitur 2027 also auch die des Abiturs 2026.
+        $zeitraum   = app(\App\Services\CurrentExamPeriodService::class)->current();
+        $zeitraumId = $zeitraum !== null ? $zeitraum->id : 0;
+        $jahr       = $zeitraum !== null ? $zeitraum->year : 0;
+
         // --- Schüleranzahl pro Kursleiter (Erstkorrektur) in schriftl. Prüfungen ---
         // Aggregation direkt in der DB: gezählte StudentExams je course->teacher_id
         $writtenCounts = \Illuminate\Support\Facades\DB::table('student_exams')
             ->join('courses', 'courses.id', '=', 'student_exams.course_id')
+            ->where('courses.exam_period_id', $zeitraumId)
             ->where('student_exams.exam_type', 'written')
             ->whereNotNull('courses.teacher_id')
             ->selectRaw('courses.teacher_id, COUNT(*) as cnt')
@@ -45,6 +53,7 @@ class TeacherDeploymentController extends Controller
 
         // --- Zweitkorrektur: Anzahl Kurse als second_corrector ---
         $secondCourses = Course::whereNotNull('second_corrector_id')
+            ->where('exam_period_id', $zeitraumId)
             ->select('second_corrector_id')
             ->get();
 
@@ -57,9 +66,14 @@ class TeacherDeploymentController extends Controller
         }
 
         // --- Mündliche Prüfungen (Kolloquien) ---
-        $oralExams = StudentExam::where('exam_type', 'oral')
-            ->select('examiner_id', 'assessor_id')
-            ->get();
+        // Über imPruefungszeitraum(): enthält die externen Bewerber und
+        // lässt Prüfungen anderer Jahrgänge außen vor.
+        $oralExams = $zeitraum !== null
+            ? StudentExam::imPruefungszeitraum($zeitraum)
+                ->where('exam_type', 'oral')
+                ->select('examiner_id', 'assessor_id')
+                ->get()
+            : collect();
 
         /** @var array<int, int> $oralExaminerCount */
         $oralExaminerCount = [];
@@ -76,9 +90,9 @@ class TeacherDeploymentController extends Controller
         }
 
         // --- Aufsichten: Kolloquium (time_slot_id) + Schriftl. (written_exam_year_date_id) ---
-        $allSupervisions = Supervision::where(function ($q): void {
-            $q->whereNotNull('time_slot_id')
-              ->orWhereNotNull('written_exam_year_date_id');
+        $allSupervisions = Supervision::where(function ($q) use ($zeitraumId, $jahr): void {
+            $q->whereHas('timeSlot', fn ($t) => $t->where('exam_period_id', $zeitraumId))
+              ->orWhereHas('writtenExamYearDate', fn ($d) => $d->where('exam_year', $jahr));
         })->select('teacher_id')->get();
 
         /** @var array<int, int> $supervisionCount */
