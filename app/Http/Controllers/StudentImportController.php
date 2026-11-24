@@ -72,6 +72,12 @@ class StudentImportController extends Controller
 
             $tempPath = $this->storeTempFile($request->file('file'));
 
+            $fremdeKurse = $this->importService->kurseFremderStufe(
+                storage_path('app/' . $tempPath),
+                $request->input('delimiter', ';'),
+                $grade
+            );
+
             $availableTeachers = Teacher::active()->orderByRaw("CASE WHEN shortcode = 'EXTERN' THEN 0 ELSE 1 END")
                 ->orderBy('lastname')
                 ->orderBy('firstname')
@@ -79,6 +85,8 @@ class StudentImportController extends Controller
                 ->toArray();
 
             return view('import.preview-interactive', [
+                'fremdeKurse'        => $fremdeKurse,
+                'fremdeKurseMeldung' => $fremdeKurse !== [] ? $this->importService->meldungFremdeStufe($grade, $fremdeKurse) : '',
                 'examPeriod'        => $examPeriod,
                 'preview'           => $preview,
                 'tempPath'          => $tempPath,
@@ -189,6 +197,17 @@ class StudentImportController extends Controller
         if (!file_exists($filePath)) {
             \Log::error('Importdatei nicht gefunden!', ['path' => $filePath]);
             return back()->withErrors(['error' => "Temporaere Datei nicht gefunden. Bitte CSV erneut hochladen."]);
+        }
+
+        // Vor dem Löschen: Eine Q13-Datei darf nicht als Q12 hinein und
+        // umgekehrt. Sonst wären die bestehenden Daten schon weg, bevor
+        // processCSV() die Datei ablehnt.
+        $fremd = $this->importService->kurseFremderStufe($filePath, $delimiter, (string) $grade);
+        if ($fremd !== []) {
+            @unlink($filePath);
+
+            return redirect()->route('import.form')
+                ->withErrors(['error' => $this->importService->meldungFremdeStufe((string) $grade, $fremd)]);
         }
 
         try {

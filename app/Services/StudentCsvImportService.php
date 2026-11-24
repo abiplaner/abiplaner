@@ -203,6 +203,59 @@ class StudentCsvImportService
     }
 
     /**
+     * Kurscodes der Datei, die nicht zur gewählten Jahrgangsstufe gehören.
+     *
+     * Kurse der Q12 beginnen mit "1", Kurse der Q13 mit "2". Kurse mit "3"
+     * sind jahrgangsübergreifend und in beiden Stufen erlaubt, alle übrigen
+     * Codes prüft die Methode nicht. Am 22.10.2026 landete die Q12 als
+     * Stufe 13 im Abitur 2027 — die Erkennung in detectGradeFromPreview() ist
+     * nur ein Vorschlag, den die Vorschau überschreiben lässt. Diese Prüfung
+     * ist hart: processCSV() bricht ab, bevor etwas geschrieben wird.
+     *
+     * @return list<string> sortiert, ohne Dubletten; leer = alles passt
+     */
+    public function kurseFremderStufe(string $filePath, string $delimiter, string $grade): array
+    {
+        $fremdesPraefix = match ($grade) {
+            '12'    => '2',
+            '13'    => '1',
+            default => null,
+        };
+
+        if ($fremdesPraefix === null) {
+            return [];
+        }
+
+        $codes = [];
+        foreach ($this->parseCsvToStudentArray($filePath, $delimiter) as $schueler) {
+            foreach ($schueler['courses'] as $kurs) {
+                if (str_starts_with($kurs['course_code'], $fremdesPraefix)) {
+                    $codes[$kurs['course_code']] = true;
+                }
+            }
+        }
+
+        $codes = array_map('strval', array_keys($codes));
+        sort($codes);
+
+        return $codes;
+    }
+
+    /**
+     * Fehlermeldung zu kurseFremderStufe(), für Vorschau und Import gleich.
+     *
+     * @param list<string> $codes
+     */
+    public function meldungFremdeStufe(string $grade, array $codes): string
+    {
+        $erwartet = $grade === '12' ? '1' : '2';
+        $liste    = implode(', ', array_slice($codes, 0, 10)) . (count($codes) > 10 ? ', …' : '');
+
+        return "Die Datei passt nicht zur Q{$grade}: Kurse der Q{$grade} beginnen mit „{$erwartet}“ "
+            . "(jahrgangsübergreifende mit „3“). Gefunden: {$liste}.";
+    }
+
+    /**
      * Berechnet den Unterschied zwischen CSV und bestehenden DB-Daten.
      *
      * Gibt zurück:
@@ -594,6 +647,11 @@ class StudentCsvImportService
         string     $grade       = '12',
         string     $schoolId    = ''
     ): void {
+        $fremd = $this->kurseFremderStufe($filePath, $delimiter, $grade);
+        if ($fremd !== []) {
+            throw new \InvalidArgumentException($this->meldungFremdeStufe($grade, $fremd));
+        }
+
         $handle = fopen($filePath, 'r');
         DB::beginTransaction();
 
