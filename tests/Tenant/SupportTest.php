@@ -91,7 +91,7 @@ class SupportTest extends TenantTestCase
 
         $this->superAdmin = User::factory()->create([
             'email' => self::ADMIN_EMAIL,
-            'role' => 'super_admin',
+            'role' => 'admin',
             'school_id' => null,
         ]);
     }

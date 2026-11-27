@@ -17,7 +17,7 @@ class LastVisitedPageTest extends TestCase
 
     public function test_visiting_a_page_is_remembered_and_used_on_next_login(): void
     {
-        $admin = User::factory()->create(['role' => 'super_admin']);
+        $admin = User::factory()->create(['role' => 'admin']);
 
         $this->actingAs($admin)->get('/two-factor')->assertOk();
 
@@ -35,7 +35,7 @@ class LastVisitedPageTest extends TestCase
 
     public function test_edit_pages_are_not_remembered(): void
     {
-        $admin = User::factory()->create(['role' => 'super_admin']);
+        $admin = User::factory()->create(['role' => 'admin']);
 
         $this->actingAs($admin)->get('/two-factor')->assertOk();
         // 'profile.edit' endet auf '.edit' und darf die zuvor gemerkte
@@ -47,7 +47,7 @@ class LastVisitedPageTest extends TestCase
 
     public function test_ajax_requests_are_not_remembered(): void
     {
-        $admin = User::factory()->create(['role' => 'super_admin']);
+        $admin = User::factory()->create(['role' => 'admin']);
 
         $this->actingAs($admin)
             ->get('/two-factor', ['X-Requested-With' => 'XMLHttpRequest'])
@@ -56,9 +56,9 @@ class LastVisitedPageTest extends TestCase
         $this->assertNull($admin->fresh()->last_visited_path);
     }
 
-    public function test_stale_last_visited_path_falls_back_to_admin_dashboard(): void
+    public function test_stale_last_visited_path_falls_back_to_dashboard(): void
     {
-        $admin = User::factory()->create(['role' => 'super_admin']);
+        $admin = User::factory()->create(['role' => 'admin']);
         $admin->forceFill(['last_visited_path' => '/admin/does-not-exist-anymore'])->save();
 
         $response = $this->post('/login', [
@@ -66,12 +66,14 @@ class LastVisitedPageTest extends TestCase
             'password' => 'password',
         ]);
 
-        $response->assertRedirect(route('admin.dashboard', absolute: false));
+        // Seit 27.11.2026 landet auch der Schuladmin auf der Startseite der
+        // Schule (kein eigenes Admin-Dashboard mehr).
+        $response->assertRedirect(route('dashboard', absolute: false));
     }
 
     public function test_non_html_responses_are_not_remembered(): void
     {
-        $admin = User::factory()->create(['role' => 'super_admin']);
+        $admin = User::factory()->create(['role' => 'admin']);
 
         Route::middleware(['web', 'auth', 'verified', 'track.last-page'])
             ->get('/test-only/pdf-export', fn () => new Response('%PDF-1.4 …', 200, ['Content-Type' => 'application/pdf']));

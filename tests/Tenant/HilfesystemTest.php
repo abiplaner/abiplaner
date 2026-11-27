@@ -58,7 +58,7 @@ class HilfesystemTest extends TenantTestCase
 
         $this->superAdmin = User::factory()->create([
             'email' => self::ADMIN_EMAIL,
-            'role' => 'super_admin',
+            'role' => 'admin',
             'school_id' => null,
         ]);
 
@@ -310,39 +310,62 @@ class HilfesystemTest extends TenantTestCase
     }
 
     /**
-     * **Der wichtigste Test dieses Umbaus.** Was ein Mensch redigiert hat, darf
-     * kein spaeterer Seeder-Lauf ueberschreiben — sonst faellt der naechste
-     * Deploy den Text zurueck, und niemand merkt es.
+     * Seit 27.11.2026 sind die Dateien die einzige Quelle: Eine Abweichung in
+     * der Datenbank bringt der nächste Lauf auf den Stand der Datei zurück.
      */
-    public function test_der_seeder_faesst_redigierte_kapitel_nicht_an(): void
+    public function test_der_seeder_bringt_abweichende_kapitel_auf_den_stand_der_dateien(): void
     {
         $slug = array_key_first((new HilfeKapitelSeeder())->grundfassung());
         $this->assertNotNull($slug);
 
         $kapitel = HilfeKapitel::query()->where('slug', $slug)->firstOrFail();
         $vorher = $kapitel->markdown;
-        $redigiert = $vorher . "\n\nVon Hand ergaenzter Absatz.";
+        $kapitel->update(['markdown' => $vorher . "\n\nVon Hand ergaenzter Absatz.", 'grundfassung_hash' => null]);
 
-        try {
-            $kapitel->update(['markdown' => $redigiert, 'grundfassung_hash' => null]);
+        $seeder = new HilfeKapitelSeeder();
+        $seeder->run();
 
-            $seeder = new HilfeKapitelSeeder();
-            $seeder->run();
+        $this->assertSame(1, $seeder->bilanz['aktualisiert']);
+        $this->assertSame($vorher, $kapitel->fresh()?->markdown);
+    }
 
-            $this->assertGreaterThan(0, $seeder->bilanz['redigiert']);
-            $this->assertSame(
-                $redigiert,
-                $kapitel->fresh()?->markdown,
-                'Der Seeder hat eine redigierte Fassung ueberschrieben.'
-            );
-        } finally {
-            $kapitel->update([
-                'markdown' => $vorher,
-                'grundfassung_hash' => HilfeKapitel::fingerabdruckAus($kapitel->fresh()?->inhaltFuerVersion() ?? []),
-            ]);
-            // Sicher zurueck auf den Stand der Grundfassung.
-            (new HilfeKapitelSeeder())->run();
-        }
+    /** Ein Kapitel ohne Datei verschwindet beim nächsten Lauf. */
+    public function test_der_seeder_entfernt_kapitel_ohne_datei(): void
+    {
+        HilfeKapitel::query()->create([
+            'slug' => 'zzz-ohne-datei',
+            'titel' => 'Verwaist',
+            'gruppe' => 'Weiteres',
+            'reihenfolge' => 9999,
+            'markdown' => 'Nur in der Datenbank.',
+        ]);
+
+        $seeder = new HilfeKapitelSeeder();
+        $seeder->run();
+
+        $this->assertSame(1, $seeder->bilanz['entfernt']);
+        $this->assertFalse(HilfeKapitel::query()->where('slug', 'zzz-ohne-datei')->exists());
+    }
+
+    /** Die Bearbeitungsmaske gibt es nicht mehr. */
+    public function test_die_hilfe_laesst_sich_nicht_mehr_in_der_oberflaeche_bearbeiten(): void
+    {
+        $this->assertFalse(\Illuminate\Support\Facades\Route::has('admin.hilfe.index'));
+        $this->actingAs($this->superAdmin)->get('/admin/hilfe')->assertNotFound();
+    }
+
+    /**
+     * Der Befehl meldet eine Luecke — und zwar gegen den echten Bestand, nicht
+     * gegen die Grundfassung im Repo (aus HilfeVerwaltungTest übernommen).
+     */
+    public function test_hilfe_pruefen_meldet_eine_geloeschte_abdeckung(): void
+    {
+        $this->artisan('hilfe:pruefen')->assertExitCode(0);
+
+        $kapitel = HilfeKapitel::query()->where('slug', 'kolloquium-planung')->firstOrFail();
+        $kapitel->update(['routen' => null]);
+
+        $this->artisan('hilfe:pruefen')->assertExitCode(1);
     }
 
     // ------------------------------------------------------------------

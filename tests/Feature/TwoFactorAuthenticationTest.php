@@ -185,7 +185,7 @@ class TwoFactorAuthenticationTest extends TestCase
 
     public function test_admin_can_reset_user_two_factor(): void
     {
-        $admin = User::factory()->create(['role' => 'super_admin']);
+        $admin = User::factory()->create(['role' => 'admin']);
         [$user] = $this->userWithTwoFactor();
 
         $response = $this->actingAs($admin)
@@ -198,7 +198,7 @@ class TwoFactorAuthenticationTest extends TestCase
 
     public function test_admin_can_reset_user_trusted_devices(): void
     {
-        $admin = User::factory()->create(['role' => 'super_admin']);
+        $admin = User::factory()->create(['role' => 'admin']);
         [$user] = $this->userWithTwoFactor();
         app(TwoFactorService::class)->rememberDevice($user);
 

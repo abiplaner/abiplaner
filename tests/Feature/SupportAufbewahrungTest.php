@@ -340,7 +340,7 @@ class SupportAufbewahrungTest extends TestCase
     private function superAdmin(): User
     {
         return User::factory()->create([
-            'role' => 'super_admin',
+            'role' => 'admin',
             'school_id' => null,
         ]);
     }
