@@ -253,6 +253,65 @@ class TenantBackupService
         Log::info('Wiederherstellung abgeschlossen: ' . $filename);
     }
 
+    /**
+     * Datenbank komplett zurücksetzen: Danach ist Abiplaner wie neu
+     * installiert und startet mit dem Einrichtungsassistenten.
+     *
+     * Vorher entsteht eine Sicherung „vor-zuruecksetzen“; sie bleibt im
+     * Sicherungsordner und lässt sich nach der neuen Einrichtung unter
+     * „Sicherungen“ wiederherstellen. Die alte Datei wird erst gelöscht, wenn
+     * die neue fertig ist — scheitert der Neuaufbau, kommt sie zurück.
+     *
+     * @return string Dateiname der Sicherung vor dem Zurücksetzen
+     */
+    public function zuruecksetzen(): string
+    {
+        $datei = $this->datenbankDatei();
+        if ($datei === ':memory:' || $datei === '') {
+            throw new \Exception('Diese Datenbank lässt sich nicht zurücksetzen.');
+        }
+
+        Log::warning('Datenbank wird zurückgesetzt');
+        $sicherung = $this->createBackup(null, 'vor-zuruecksetzen')['filename'];
+
+        $beiseite = $datei . '.zuruecksetzen-' . now()->format('YmdHis');
+
+        DB::disconnect();
+        foreach ([$datei . '-wal', $datei . '-shm'] as $begleiter) {
+            if (file_exists($begleiter)) {
+                @unlink($begleiter);
+            }
+        }
+        if (! @rename($datei, $beiseite)) {
+            DB::reconnect();
+            throw new \Exception(
+                'Die Datenbank ist gerade geöffnet und lässt sich nicht ersetzen. '
+                . 'Bitte alle anderen Nutzer abmelden lassen und erneut versuchen.'
+            );
+        }
+
+        try {
+            touch($datei);
+            DB::reconnect();
+            if (Artisan::call('abiplaner:vorbereiten') !== 0) {
+                throw new \Exception(trim(Artisan::output()) ?: 'Neuaufbau fehlgeschlagen.');
+            }
+        } catch (\Throwable $e) {
+            DB::disconnect();
+            @unlink($datei);
+            @rename($beiseite, $datei);
+            DB::reconnect();
+            Log::error('Zurücksetzen fehlgeschlagen, alte Datenbank zurückgeholt: ' . $e->getMessage());
+
+            throw new \Exception('Zurücksetzen fehlgeschlagen, die bisherigen Daten sind unverändert: ' . $e->getMessage());
+        }
+
+        @unlink($beiseite);
+        Log::warning('Datenbank zurückgesetzt; Sicherung vorher: ' . $sicherung);
+
+        return $sicherung;
+    }
+
     /** Gibt es die Datenbankdatei? */
     public function tenantDatabaseExists(?School $school = null): bool
     {

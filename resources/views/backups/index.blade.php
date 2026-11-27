@@ -31,7 +31,7 @@
                         <div class="mt-2 text-sm text-blue-700">
                             <ul class="list-disc pl-5 space-y-1">
                                 <li><strong>Schule:</strong> {{ $school->name }}</li>
-                                <li><strong>Datenbank:</strong> school_{{ $school->school_number }}</li>
+                                <li><strong>Datenbank:</strong> <span class="font-mono text-xs break-all">{{ $datenbankDatei }}</span></li>
                                 <li><strong>Status:</strong> 
                                     @if($dbExists)
                                         <span class="text-green-600 font-semibold">✓ Datenbank existiert</span>
@@ -43,6 +43,28 @@
                             </ul>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Speicherort -->
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-lg font-semibold mb-1">Speicherort der Sicherungen</h3>
+                        <p class="font-mono text-sm text-gray-700 break-all select-all bg-gray-50 border border-gray-200 rounded px-3 py-2">{{ $sicherungsOrdner }}</p>
+                        @unless($ordnerOeffnenMoeglich)
+                            <p class="mt-1 text-xs text-gray-500">Der Ordner liegt auf dem Server; dort z.&nbsp;B. per Datensicherung des Servers mitsichern.</p>
+                        @endunless
+                    </div>
+                    @if($ordnerOeffnenMoeglich)
+                        <form method="POST" action="{{ route('backups.ordner') }}" class="shrink-0">
+                            @csrf
+                            <button type="submit"
+                                    class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50">
+                                📂 {{ $ordnerOeffnenText }}
+                            </button>
+                        </form>
+                    @endif
                 </div>
             </div>
 
@@ -310,18 +332,53 @@
                                 <li><strong>Versionierung:</strong> Jedes Backup enthält Metadaten über Schema-Version und Migrations</li>
                                 <li><strong>Kompatibilitätsprüfung:</strong> Beim Restore wird automatisch geprüft, ob das Backup kompatibel ist</li>
                                 <li><strong>Wiederherstellung:</strong> Ersetzt die komplette Schuldatenbank. Vorher wird automatisch eine Sicherung „vor-wiederherstellung“ angelegt; ältere Sicherungen werden danach auf den aktuellen Stand migriert. Andere Nutzer sollten dabei abgemeldet sein.</li>
-                                <li><strong>Speicherort:</strong> {{ app(\App\Services\TenantBackupService::class)->sicherungsVerzeichnis($school) }} — für eine echte Sicherung zusätzlich herunterladen oder den Datenordner auf ein anderes Laufwerk kopieren.</li>
-                                @else
-                                <li><strong>Backup-Format:</strong> Komprimierte SQL-Dumps (.sql.gz) mit Metadaten (.meta.json)</li>
-                                <li><strong>Versionierung:</strong> Jedes Backup enthält Metadaten über Schema-Version und Migrations</li>
-                                <li><strong>Kompatibilitätsprüfung:</strong> Beim Restore wird automatisch geprüft, ob das Backup kompatibel ist</li>
-                                <li><strong>Wiederherstellung:</strong> Überschreibt die komplette Datenbank - vorher sichern!</li>
-                                <li><strong>Veraltete Backups:</strong> Nach Restore von älteren Backups Migration empfohlen</li>
-                                <li><strong>Speicherort:</strong> storage/app/backups/school_{{ $school->school_number }}/</li>
+                                <li><strong>Automatisch:</strong> einmal täglich beim Start bzw. nachts (die letzten 14) und vor jedem Programm-Update.</li>
                                 <li><strong>Datenintegrität:</strong> Alle Backups werden mit SHA256-Checksum validiert</li>
+                                <li><strong>Echte Sicherung:</strong> Die Sicherungen liegen auf demselben Rechner wie die Datenbank. Bitte regelmäßig herunterladen oder den Sicherungsordner auf ein anderes Laufwerk kopieren.</li>
                             </ul>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Gefahrenbereich: alles zurücksetzen -->
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg border border-red-200"
+                 x-data="{ offen: {{ $errors->has('bestaetigung') || $errors->has('password') ? 'true' : 'false' }} }">
+                <div class="p-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <h3 class="text-lg font-semibold text-red-700">Abiplaner zurücksetzen</h3>
+                            <p class="mt-1 text-sm text-gray-600">
+                                Löscht <strong>alle Daten</strong> — Schule, Benutzerkonten, Schüler, Lehrkräfte, Planungen —
+                                und startet neu mit der Einrichtung. Vorher wird automatisch eine Sicherung
+                                „vor-zuruecksetzen“ angelegt; sie bleibt im Sicherungsordner und lässt sich nach der
+                                neuen Einrichtung hier wiederherstellen.
+                            </p>
+                        </div>
+                        <button type="button" x-show="!offen" x-on:click="offen = true"
+                                class="shrink-0 inline-flex items-center px-4 py-2 bg-white border border-red-300 rounded-md font-semibold text-xs text-red-700 uppercase tracking-widest hover:bg-red-50">
+                            Zurücksetzen …
+                        </button>
+                    </div>
+
+                    <form method="POST" action="{{ route('backups.zuruecksetzen') }}" x-show="offen" x-cloak
+                          class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 items-end"
+                          data-confirm="Wirklich ALLE Daten löschen und Abiplaner neu einrichten?">
+                        @csrf
+                        <div>
+                            <x-input-label for="bestaetigung" value="Zur Bestätigung ZURÜCKSETZEN eintippen" />
+                            <x-text-input id="bestaetigung" name="bestaetigung" type="text" class="block mt-1 w-full" autocomplete="off" required />
+                            <x-input-error :messages="$errors->get('bestaetigung')" class="mt-2" />
+                        </div>
+                        <div>
+                            <x-input-label for="reset_password" value="Ihr Passwort" />
+                            <x-text-input id="reset_password" name="password" type="password" class="block mt-1 w-full" autocomplete="current-password" required />
+                            <x-input-error :messages="$errors->get('password')" class="mt-2" />
+                        </div>
+                        <div>
+                            <x-danger-button class="w-full justify-center">Alle Daten löschen</x-danger-button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

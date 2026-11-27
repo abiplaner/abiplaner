@@ -23,6 +23,15 @@ class DesktopZugang
 {
     public const COOKIE = 'abiplaner_desktop';
 
+    /**
+     * Läuft Abiplaner in der Desktop-App? Dann sitzt der Benutzer am selben
+     * Rechner wie Webserver und Datenbank (Ordner öffnen, Passwort vergessen).
+     */
+    public static function aktiv(): bool
+    {
+        return (string) config('abiplaner.desktop_token', '') !== '';
+    }
+
     public function handle(Request $request, Closure $next): Response
     {
         $token = (string) config('abiplaner.desktop_token', '');
