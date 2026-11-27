@@ -12,6 +12,12 @@
     <section id="laden">
       <div class="kreisel" aria-hidden="true"></div>
       <p id="laden-text">Abiplaner wird gestartet …</p>
+      <progress id="laden-balken" max="100"></progress>
+      <ol id="laden-schritte" class="schritte" aria-live="polite"></ol>
+      <p id="laden-hinweis" class="leise-text" hidden>
+        Der erste Start nach der Installation oder einem Update dauert länger —
+        Abiplaner richtet dabei die Datenbank ein und legt eine Sicherung an.
+      </p>
     </section>
 
     <section id="auswahl" hidden>

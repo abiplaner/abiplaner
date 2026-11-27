@@ -45,11 +45,13 @@ class Vorbereiten extends Command
             $this->info("Neue Datenbank angelegt: {$datei}");
         }
 
+        $this->schritt('Datenbank wird geprüft');
         $ersterStart = ! Schema::hasTable('migrations');
         $hatSchule = ! $ersterStart && Schema::hasTable('schools') && DB::table('schools')->exists();
 
         // Vor einem Update sichern: Gibt es Migrationen, die noch nicht liefen?
         if ($hatSchule && $this->stehenMigrationenAn($migrator)) {
+            $this->schritt('Sicherung vor dem Update');
             $this->info('Programm-Update erkannt: Sicherung vor dem Einspielen …');
             if ($this->call('abiplaner:sichern', ['--art' => 'vor-update', '--keep' => 10]) !== self::SUCCESS) {
                 $this->error('Ohne Sicherung kein Update der Datenbank. Abbruch.');
@@ -58,6 +60,7 @@ class Vorbereiten extends Command
             }
         }
 
+        $this->schritt('Datenbank wird aktualisiert');
         if ($this->call('migrate', ['--force' => true]) !== self::SUCCESS) {
             return self::FAILURE;
         }
@@ -65,9 +68,11 @@ class Vorbereiten extends Command
         // Zweites Merkmal für den ersten Start (falls er beim Seeden abbrach):
         // keine Prüfungsperiode.
         if ($ersterStart || DB::table('exam_periods')->doesntExist()) {
+            $this->schritt('Stammdaten werden eingespielt');
             $this->info('Erster Start: Stammdaten werden eingespielt …');
             $this->call('db:seed', ['--force' => true]);
         } else {
+            $this->schritt('Hilfe und Termine werden abgeglichen');
             $this->call('hilfe:einspielen');
             // Neue Schuljahre und Berichtigungen aus database/data/termine.
             // Ein Fehler darin meldet der Befehl selbst; der Start geht weiter.
@@ -75,10 +80,20 @@ class Vorbereiten extends Command
         }
 
         if ($hatSchule && ! $this->heuteSchonGesichert()) {
+            $this->schritt('Tägliche Sicherung');
             $this->call('abiplaner:sichern', ['--art' => 'auto', '--keep' => 14]);
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Fortschrittsmarke für die Startanzeige der Desktop-App: laufzeit.rs
+     * liest die Ausgabe zeilenweise und zeigt den Text im Startfenster.
+     */
+    private function schritt(string $text): void
+    {
+        $this->line('[schritt] ' . $text);
     }
 
     private function stehenMigrationenAn(Migrator $migrator): bool

@@ -1,6 +1,7 @@
 //! Start und Stopp der eingebauten Laravel-Instanz.
 
 use std::fs::{self, OpenOptions};
+use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
@@ -9,7 +10,7 @@ use std::time::{Duration, Instant};
 
 use base64::Engine;
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 
 #[derive(Default)]
 pub struct Zustand {
@@ -232,7 +233,10 @@ fn einzelplatz_starten(app: &AppHandle) -> Result<String, String> {
     ];
 
     // 1. Datenbank vorbereiten (sichert vor Updates, migriert, Stammdaten).
-    let status = kommando(&php)
+    //    Die Ausgabe geht ins Protokoll; Zeilen „[schritt] …“ (Vorbereiten.php)
+    //    erscheinen zusätzlich im Startfenster.
+    melde(app, "PHP-Laufzeit wird geladen");
+    let mut vorbereitung = kommando(&php)
         .arg("php-cli")
         .arg("artisan")
         .arg("abiplaner:vorbereiten")
@@ -240,10 +244,22 @@ fn einzelplatz_starten(app: &AppHandle) -> Result<String, String> {
         .current_dir(&anwendung)
         .envs(umgebung.iter().map(|(k, v)| (*k, v.as_str())))
         .stdin(Stdio::null())
-        .stdout(protokoll(&daten, "start-protokoll.txt")?)
+        .stdout(Stdio::piped())
         .stderr(protokoll(&daten, "start-protokoll.txt")?)
-        .status()
+        .spawn()
         .map_err(|f| format!("Vorbereitung nicht gestartet: {f}"))?;
+    if let Some(ausgabe) = vorbereitung.stdout.take() {
+        let mut log = protokoll(&daten, "start-protokoll.txt")?;
+        for zeile in BufReader::new(ausgabe).lines().map_while(Result::ok) {
+            let _ = writeln!(log, "{zeile}");
+            if let Some(text) = zeile.strip_prefix("[schritt] ") {
+                melde(app, text);
+            }
+        }
+    }
+    let status = vorbereitung
+        .wait()
+        .map_err(|f| format!("Vorbereitung: {f}"))?;
     if !status.success() {
         return Err(format!(
             "Die Datenbank konnte nicht vorbereitet werden. Einzelheiten: {}",
@@ -252,6 +268,7 @@ fn einzelplatz_starten(app: &AppHandle) -> Result<String, String> {
     }
 
     // 2. Webserver nur auf 127.0.0.1 starten.
+    melde(app, "Webserver wird gestartet");
     let kind = kommando(&php)
         .arg("run")
         .arg("--config")
@@ -282,5 +299,44 @@ fn einzelplatz_starten(app: &AppHandle) -> Result<String, String> {
         std::thread::sleep(Duration::from_millis(150));
     }
 
+    // 4. Die erste Seite einmal abrufen, solange noch die Startanzeige steht:
+    //    Der erste Aufruf übersetzt PHP-Dateien und Vorlagen und dauert —
+    //    sonst stünde das Fenster in dieser Zeit scheinbar still.
+    melde(app, "Oberfläche wird vorbereitet");
+    if let Some(cookie) = abrufen(adresse, &format!("/desktop/start?token={token}"), None) {
+        let _ = abrufen(adresse, "/login", Some(&cookie));
+    }
+
+    melde(app, "Abiplaner wird geöffnet");
     Ok(format!("http://127.0.0.1:{port}/desktop/start?token={token}"))
+}
+
+/// Schritt des Starts an die Startseite melden (src/start.js).
+fn melde(app: &AppHandle, text: &str) {
+    let _ = app.emit("start", text.to_string());
+}
+
+/// Einfacher HTTP-GET an den eigenen Webserver (Vorwärmen). Liefert das
+/// Desktop-Cookie aus der Antwort, falls eines gesetzt wurde. Fehler sind
+/// egal — dann lädt eben das Fenster die Seite zum ersten Mal.
+fn abrufen(adresse: SocketAddr, pfad: &str, cookie: Option<&str>) -> Option<String> {
+    let mut verbindung = TcpStream::connect_timeout(&adresse, Duration::from_secs(2)).ok()?;
+    let _ = verbindung.set_read_timeout(Some(Duration::from_secs(90)));
+    let kopf_cookie = cookie.map(|c| format!("Cookie: {c}\r\n")).unwrap_or_default();
+    let anfrage = format!(
+        "GET {pfad} HTTP/1.1\r\nHost: 127.0.0.1:{}\r\n{kopf_cookie}Connection: close\r\n\r\n",
+        adresse.port()
+    );
+    verbindung.write_all(anfrage.as_bytes()).ok()?;
+    let mut antwort = Vec::new();
+    let _ = verbindung.read_to_end(&mut antwort);
+    let text = String::from_utf8_lossy(&antwort);
+    text.lines()
+        .take_while(|z| !z.is_empty())
+        .filter_map(|z| {
+            let (name, wert) = z.split_once(':')?;
+            name.eq_ignore_ascii_case("set-cookie").then(|| wert.trim().to_string())
+        })
+        .find(|c| c.starts_with("abiplaner_desktop="))
+        .and_then(|c| c.split(';').next().map(str::to_string))
 }
