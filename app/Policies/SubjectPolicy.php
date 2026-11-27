@@ -12,26 +12,26 @@ class SubjectPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->isSuperAdmin();
+        return $user->isAdmin();
     }
 
     public function view(User $user, Subject $subject): bool
     {
-        return $user->isSuperAdmin();
+        return $user->isAdmin();
     }
 
     public function create(User $user): bool
     {
-        return $user->isSuperAdmin();
+        return $user->isAdmin();
     }
 
     public function update(User $user, Subject $subject): bool
     {
-        return $user->isSuperAdmin();
+        return $user->isAdmin();
     }
 
     public function delete(User $user, Subject $subject): bool
     {
-        return $user->isSuperAdmin();
+        return $user->isAdmin();
     }
 }

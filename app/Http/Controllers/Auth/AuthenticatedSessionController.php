@@ -63,15 +63,6 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        // Super-Admins go to admin dashboard (no tenancy) — außer lokal, wo der
-        // Super-Admin auch plant (User::isSchoolPlanner()).
-        if ($user->isCentralAdmin()) {
-            $default = route('admin.dashboard', absolute: false);
-
-            return redirect()->intended($this->lastVisitedPage->destinationFor($user, $default));
-        }
-
-        // Regular users go to tenant dashboard (with tenancy)
         $default = route('dashboard', absolute: false);
 
         return redirect()->intended($this->lastVisitedPage->destinationFor($user, $default));

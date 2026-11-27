@@ -33,7 +33,7 @@ class CalendarEventPolicy
     public function create(User $user): bool
     {
         // Planer und Super-Admins können Events erstellen
-        return in_array($user->role, ['planner', 'super_admin']);
+        return in_array($user->role, ['planner', 'admin']);
     }
 
     /**
@@ -56,7 +56,7 @@ class CalendarEventPolicy
      */
     public function update(User $user, CalendarEvent $calendarEvent): bool
     {
-        return in_array($user->role, ['planner', 'super_admin'], true);
+        return in_array($user->role, ['planner', 'admin'], true);
     }
 
     /**
@@ -79,6 +79,6 @@ class CalendarEventPolicy
      */
     public function createGlobal(User $user): bool
     {
-        return $user->role === 'super_admin';
+        return $user->role === 'admin';
     }
 }

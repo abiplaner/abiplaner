@@ -18,7 +18,7 @@
                  Die drei Dateien, ohne die nicht geplant werden kann. Erscheint,
                  solange eine davon fehlt — nach dem Schuljahreswechsel also wieder. --}}
             @unlessarchive
-            @if (auth()->user()->isSchoolPlanner() && ($setupProgress['offen'] ?? 0) > 0)
+            @if (auth()->user()->isPlanner() && ($setupProgress['offen'] ?? 0) > 0)
                 <div class="bg-white rounded-xl shadow-sm border border-indigo-200 overflow-hidden">
                     <div class="px-4 py-3 bg-indigo-50 border-b border-indigo-100 flex flex-wrap items-baseline justify-between gap-2">
                         <h3 class="font-semibold text-indigo-900">
@@ -57,7 +57,7 @@
 
                         @php
                             $dashPeriodSwitcher = app(\App\Services\CurrentExamPeriodService::class);
-                            $dashPeriods = auth()->user()->isCentralAdmin() ? collect() : $dashPeriodSwitcher->all();
+                            $dashPeriods = $dashPeriodSwitcher->all();
                         @endphp
                         @if($dashPeriods->count() > 1)
                             <x-dropdown align="left" width="48">
@@ -109,7 +109,7 @@
                         ['label' => 'Lehrkräfte',             'value' => $stats['total_teachers'] ?? 0, 'icon' => '👩‍🏫', 'route' => 'teachers.index'],
                         ['label' => 'Räume',                  'value' => $stats['total_rooms']    ?? 0, 'icon' => '🚪', 'route' => 'rooms.index'],
                     ];
-                    $statsVerlinkt = auth()->user()->isSchoolPlanner();
+                    $statsVerlinkt = auth()->user()->isPlanner();
                 @endphp
                 @foreach ($baseStats as $s)
                     @php $alsLink = $statsVerlinkt && \Illuminate\Support\Facades\Route::has($s['route']); @endphp

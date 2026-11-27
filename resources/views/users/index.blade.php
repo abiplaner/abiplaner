@@ -21,7 +21,7 @@
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
                 <div class="p-6">
                     <form method="GET" action="{{ route('admin.users.index') }}" class="space-y-4">
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <!-- Suche -->
                             <div>
                                 <label for="search" class="block text-sm font-medium text-gray-700 mb-1">
@@ -35,26 +35,6 @@
                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                             </div>
 
-                            <!-- Schule -->
-                            <div>
-                                <label for="school_id" class="block text-sm font-medium text-gray-700 mb-1">
-                                    Schule
-                                </label>
-                                <select id="school_id" 
-                                        name="school_id"
-                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                    <option value="">Alle Schulen</option>
-                                    @foreach($schools as $school)
-                                        {{-- school_number, nicht id: schools hat keine Spalte id, der
-                                             Schluessel ist die Schulnummer. users.school_id ist
-                                             varchar(4) und haelt genau diese Nummer. --}}
-                                        <option value="{{ $school->school_number }}" {{ request('school_id') == $school->school_number ? 'selected' : '' }}>
-                                            {{ $school->short_name }} - {{ $school->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-
                             <!-- Rolle -->
                             <div>
                                 <label for="role" class="block text-sm font-medium text-gray-700 mb-1">
@@ -64,8 +44,9 @@
                                         name="role"
                                         class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                     <option value="">Alle Rollen</option>
-                                    <option value="super_admin" {{ request('role') === 'super_admin' ? 'selected' : '' }}>Super Admin</option>
-                                    <option value="planner" {{ request('role') === 'planner' ? 'selected' : '' }}>Planer</option>
+                                    @foreach(\App\Models\User::ROLLEN as $wert => $bezeichnung)
+                                        <option value="{{ $wert }}" @selected(request('role') === $wert)>{{ $bezeichnung }}</option>
+                                    @endforeach
                                 </select>
                             </div>
 
@@ -105,8 +86,6 @@
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">E-Mail</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Schule</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Schulnr.</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rolle</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Letzter Login</th>
@@ -121,14 +100,9 @@
                                     </td>
                                     <td class="px-6 py-4 text-sm text-gray-900">{{ $user->email }}</td>
                                     <td class="px-6 py-4">
-                                        <div class="text-sm text-gray-900">{{ $user->school->name ?? '-' }}</div>
-                                        <div class="text-xs text-gray-500">{{ $user->school->short_name ?? '' }}</div>
-                                    </td>
-                                    <td class="px-6 py-4 text-sm text-gray-900">{{ $user->school->school_number ?? '-' }}</td>
-                                    <td class="px-6 py-4">
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                            {{ $user->role === 'super_admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800' }}">
-                                            {{ $user->role === 'super_admin' ? 'Super Admin' : 'Planer' }}
+                                            {{ $user->isAdmin() ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800' }}">
+                                            {{ $user->rollenName() }}
                                         </span>
                                     </td>
                                     <td class="px-6 py-4">
@@ -165,7 +139,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="8" class="px-6 py-4 text-center text-gray-500">
+                                    <td colspan="6" class="px-6 py-4 text-center text-gray-500">
                                         Keine Benutzer vorhanden.
                                     </td>
                                 </tr>

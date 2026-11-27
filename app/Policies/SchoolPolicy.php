@@ -9,7 +9,7 @@ class SchoolPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->isSuperAdmin();
+        return $user->isAdmin();
     }
 
     /**
@@ -27,21 +27,21 @@ class SchoolPolicy
      */
     public function view(User $user, School $school): bool
     {
-        return $user->isSuperAdmin() || $user->school_id === $school->school_number;
+        return $user->isAdmin() || $user->school_id === $school->school_number;
     }
 
     public function create(User $user): bool
     {
-        return $user->isSuperAdmin();
+        return $user->isAdmin();
     }
 
     public function update(User $user, School $school): bool
     {
-        return $user->isSuperAdmin();
+        return $user->isAdmin();
     }
 
     public function delete(User $user, School $school): bool
     {
-        return $user->isSuperAdmin();
+        return $user->isAdmin();
     }
 }

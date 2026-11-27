@@ -3,19 +3,41 @@
 namespace App\Http\Controllers;
 
 use App\Models\GlobalCalendarEvent;
+use App\Support\SchoolYear;
 use Illuminate\Http\Request;
 
 class GlobalCalendarEventController extends Controller
 {
     /**
      * Display a listing of global calendar events.
-     * Only accessible by super_admin in central context (no tenancy).
+     * Nur für den Schuladmin (Verwaltung → Globaler Kalender).
      */
     public function index(Request $request)
     {
         $this->authorize('viewAny', GlobalCalendarEvent::class);
 
         $query = GlobalCalendarEvent::query();
+
+        // Schuljahr (Standard: das laufende; „alle“ zeigt alles). Ein Termin
+        // gehört dazu, wenn er im Schuljahr beginnt oder hineinreicht.
+        $aktuellesSchuljahr = SchoolYear::current();
+        $schuljahr = (string) $request->input('schuljahr', $aktuellesSchuljahr);
+        if (! SchoolYear::isValid($schuljahr)) {
+            $schuljahr = 'alle';
+        }
+        if ($schuljahr !== 'alle') {
+            [$von, $bis] = SchoolYear::range($schuljahr);
+            $query->where('event_date', '<=', $bis->toDateString())
+                ->where(function ($q) use ($von) {
+                    $q->where('event_date', '>=', $von->toDateString())
+                        ->orWhere('end_date', '>=', $von->toDateString());
+                });
+        }
+
+        $vorhandeneJahre = GlobalCalendarEvent::query()->pluck('event_date')
+            ->map(fn ($datum) => SchoolYear::forDate(\Illuminate\Support\Carbon::parse($datum)))
+            ->unique();
+        $schuljahre = SchoolYear::options($schuljahr === 'alle' ? null : $schuljahr, $vorhandeneJahre);
 
         // Volltextsuche im Titel
         if ($search = $request->input('search')) {
@@ -37,7 +59,7 @@ class GlobalCalendarEventController extends Controller
             ->paginate(50)
             ->withQueryString();
 
-        return view('admin.global-calendar.index', compact('events'));
+        return view('admin.global-calendar.index', compact('events', 'schuljahr', 'schuljahre', 'aktuellesSchuljahr'));
     }
 
     /**

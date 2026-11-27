@@ -206,12 +206,12 @@
                                            class="rounded border-gray-300 dark:border-gray-700 dark:bg-gray-900">
                                     <span class="ml-2">Jährlich wiederkehrender Termin</span>
                                 </label>
-                                @if(auth()->user()->isSuperAdmin())
+                                @if(auth()->user()->isAdmin())
                                     <label class="inline-flex items-center">
                                         <input type="checkbox" name="is_global" value="1" 
                                                {{ old('is_global') ? 'checked' : '' }}
                                                class="rounded border-gray-300 dark:border-gray-700 dark:bg-gray-900">
-                                        <span class="ml-2 text-orange-600 dark:text-orange-400 font-semibold">Globaler Termin (für alle Schulen)</span>
+                                        <span class="ml-2 text-orange-600 dark:text-orange-400 font-semibold">Globaler Termin (Globaler Kalender)</span>
                                     </label>
                                 @endif
                             </div>

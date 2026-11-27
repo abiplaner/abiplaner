@@ -12,7 +12,7 @@ class ExamMaterialPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->role === 'super_admin' || $user->role === 'planner';
+        return $user->role === 'admin' || $user->role === 'planner';
     }
 
     /**
@@ -20,7 +20,7 @@ class ExamMaterialPolicy
      */
     public function view(User $user, ExamMaterial $examMaterial): bool
     {
-        return $user->role === 'super_admin' || $user->role === 'planner';
+        return $user->role === 'admin' || $user->role === 'planner';
     }
 
     /**
@@ -28,7 +28,7 @@ class ExamMaterialPolicy
      */
     public function create(User $user): bool
     {
-        return $user->role === 'super_admin' || $user->role === 'planner';
+        return $user->role === 'admin' || $user->role === 'planner';
     }
 
     /**
@@ -36,7 +36,7 @@ class ExamMaterialPolicy
      */
     public function update(User $user, ExamMaterial $examMaterial): bool
     {
-        return $user->role === 'super_admin' || $user->role === 'planner';
+        return $user->role === 'admin' || $user->role === 'planner';
     }
 
     /**
@@ -44,7 +44,7 @@ class ExamMaterialPolicy
      */
     public function delete(User $user, ExamMaterial $examMaterial): bool
     {
-        return $user->role === 'super_admin' || $user->role === 'planner';
+        return $user->role === 'admin' || $user->role === 'planner';
     }
 
     /**

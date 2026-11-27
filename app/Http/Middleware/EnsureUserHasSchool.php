@@ -15,12 +15,7 @@ class EnsureUserHasSchool
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Super admins don't need a school assignment
-        if (auth()->check() && auth()->user()->isSuperAdmin()) {
-            return $next($request);
-        }
-
-        // Regular users must be assigned to a school
+        // Jeder Benutzer gehört zur Schule der Installation.
         if (auth()->check() && !auth()->user()->school_id) {
             \Log::warning('User has no school assigned', [
                 'user_id' => auth()->user()->id,

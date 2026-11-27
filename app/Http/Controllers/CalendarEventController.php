@@ -146,11 +146,10 @@ class CalendarEventController extends Controller
         $validated['created_by'] = Auth::id();
         $validated['color'] = $validated['color'] ?? '#3B82F6';
         
-        // Prüfe ob globales Event erstellt werden soll (nur Superadmin)
+        // Prüfe ob globales Event erstellt werden soll (nur Schuladmin)
         if ($request->boolean('is_global')) {
-            // Policy-Check für Superadmin
-            if (!Auth::user()->isSuperAdmin()) {
-                abort(403, 'Nur Superadmins können globale Events erstellen.');
+            if (!Auth::user()->isAdmin()) {
+                abort(403, 'Nur Schuladmins können globale Termine anlegen.');
             }
             
             // Erstelle GlobalCalendarEvent

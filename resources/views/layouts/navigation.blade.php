@@ -5,13 +5,13 @@
             <div class="flex">
                 <!-- Logo & Schuljahr-Kennzeichnung -->
                 <div class="shrink-0 flex items-center mr-6 gap-2.5">
-                    <a href="{{ auth()->user()->isCentralAdmin() ? route('admin.dashboard') : route('dashboard') }}" class="flex items-center">
+                    <a href="{{ route('dashboard') }}" class="flex items-center">
                          <img class="block h-10 w-auto" src="{{ asset('assets/landing/logo.png') }}" alt="AbiPlaner Logo" />
                     </a>
 
                     @php
                         $periodSwitcher = app(\App\Services\CurrentExamPeriodService::class);
-                        $switcherCurrent = auth()->user()->isCentralAdmin() ? null : $periodSwitcher->current();
+                        $switcherCurrent = $periodSwitcher->current();
                         $isArchive = $periodSwitcher->isArchiveView();
                     @endphp
 
@@ -26,7 +26,7 @@
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:flex sm:items-center">
                     
-                    @if(auth()->user()->isSchoolPlanner())
+                    @if(auth()->user()->isPlanner())
                         @php
                             // ExamPeriods sind jetzt global - nehme den neuesten
                             $activeExamPeriod = app(\App\Services\CurrentExamPeriodService::class)->current();
@@ -222,33 +222,9 @@
                         </x-nav-dropdown>
                     @endif
                     
-                    @if(auth()->user()->isCentralAdmin())
-                        <x-nav-link :href="route('admin.written-exam-slots.index')" :active="request()->routeIs('admin.written-exam-slots.*')">
-                            {{ __('Schriftliche Prüfungen') }}
-                        </x-nav-link>
-                        
-                        <x-nav-link :href="route('admin.global-calendar.index')" :active="request()->routeIs('admin.global-calendar.*')">
-                            {{ __('Globaler Kalender') }}
-                        </x-nav-link>
-                        
-                        
-                        <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
-                            {{ __('Benutzer') }}
-                        </x-nav-link>
-                        
-                        <x-nav-link :href="route('admin.subjects.index')" :active="request()->routeIs('admin.subjects.*')">
-                            {{ __('Fächer') }}
-                        </x-nav-link>
-
-                        {{-- Hilfekapitel (Modul 6.3): zentraler Bestand, deshalb hier --}}
-                        <x-nav-link :href="route('admin.hilfe.index')" :active="request()->routeIs('admin.hilfe.*')">
-                            {{ __('Hilfe') }}
-                        </x-nav-link>
-
-                    @elseif(auth()->user()->isSuperAdmin())
-                        {{-- Der Super-Admin plant auch (User::isSchoolPlanner()).
-                             Die zentrale Pflege steht deshalb gebündelt in einem Menü,
-                             sonst läuft die Leiste über. --}}
+                    @if(auth()->user()->isAdmin())
+                        {{-- Der Schuladmin plant auch; die Verwaltung steht gebündelt
+                             in einem Menü, sonst läuft die Leiste über. --}}
                         <x-nav-dropdown :active="request()->routeIs('admin.*')" align="left">
                             <x-slot name="trigger">
                                 {{ __('Verwaltung') }}
@@ -265,9 +241,6 @@
                                 </x-nav-dropdown-link>
                                 <x-nav-dropdown-link :href="route('admin.global-calendar.index')" :active="request()->routeIs('admin.global-calendar.*')">
                                     {{ __('Globaler Kalender') }}
-                                </x-nav-dropdown-link>
-                                <x-nav-dropdown-link :href="route('admin.hilfe.index')" :active="request()->routeIs('admin.hilfe.*')">
-                                    {{ __('Hilfe') }}
                                 </x-nav-dropdown-link>
                                 <x-nav-dropdown-link :href="route('backups.index')" :active="request()->routeIs('backups.*')">
                                     {{ __('Sicherungen') }}
@@ -339,11 +312,11 @@
     <!-- Responsive Navigation Menu -->
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="auth()->user()->isCentralAdmin() ? route('admin.dashboard') : route('dashboard')" :active="request()->routeIs('dashboard') || request()->routeIs('admin.dashboard')">
+            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
             
-            @if(auth()->user()->isSchoolPlanner())
+            @if(auth()->user()->isPlanner())
                 @php
                     // ExamPeriods sind jetzt global - nehme den neuesten
                     $activeExamPeriod = app(\App\Services\CurrentExamPeriodService::class)->current();
@@ -502,7 +475,7 @@
                 </x-responsive-nav-dropdown>
             @endif
             
-            @if(auth()->user()->isSuperAdmin())
+            @if(auth()->user()->isAdmin())
                 <x-responsive-nav-link :href="route('admin.written-exam-slots.index')" :active="request()->routeIs('admin.written-exam-slots.*')">
                     {{ __('Schriftliche Prüfungen') }}
                 </x-responsive-nav-link>
@@ -516,8 +489,8 @@
                     {{ __('Benutzer') }}
                 </x-responsive-nav-link>
                 
-                <x-responsive-nav-link :href="route('admin.hilfe.index')" :active="request()->routeIs('admin.hilfe.*')">
-                    {{ __('Hilfe verwalten') }}
+                <x-responsive-nav-link :href="route('backups.index')" :active="request()->routeIs('backups.*')">
+                    {{ __('Sicherungen') }}
                 </x-responsive-nav-link>
 
                 <x-responsive-nav-link :href="route('admin.subjects.index')" :active="request()->routeIs('admin.subjects.*')">

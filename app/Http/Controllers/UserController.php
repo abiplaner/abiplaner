@@ -21,11 +21,6 @@ class UserController extends Controller
         
         $query = User::with('school');
         
-        // Super Admins sehen alle Benutzer, Planner nur ihre Schule
-        if (auth()->user()->role !== 'super_admin') {
-            $query->where('school_id', auth()->user()->school_id);
-        }
-        
         // Suche nach Name oder Email
         if ($request->filled('search')) {
             $search = $request->search;
@@ -33,11 +28,6 @@ class UserController extends Controller
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('email', 'like', "%{$search}%");
             });
-        }
-        
-        // Filter nach Schule
-        if ($request->filled('school_id')) {
-            $query->where('school_id', $request->school_id);
         }
         
         // Filter nach Rolle
@@ -75,8 +65,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'school_id' => $request->role === 'super_admin' ? 'nullable' : 'required|exists:schools,school_number',
-            'role' => 'required|in:super_admin,planner',
+            'role' => 'required|in:admin,planner',
             'is_active' => 'boolean',
         ]);
         
@@ -117,8 +106,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
-            'school_id' => $request->role === 'super_admin' ? 'nullable' : 'required|exists:schools,school_number',
-            'role' => 'required|in:super_admin,planner',
+            'role' => 'required|in:admin,planner',
             'is_active' => 'boolean',
         ]);
         
@@ -130,7 +118,12 @@ class UserController extends Controller
         }
 
         $validated = $this->schuleDerLokalenEdition($validated);
-        
+
+        if ($this->waereLetzterAdminWeg($user, $validated['role'], (bool) ($validated['is_active'] ?? $user->is_active))) {
+            return back()->withInput()
+                ->with('error', 'Mindestens ein aktiver Schuladmin muss bleiben, sonst kann niemand mehr Benutzer verwalten.');
+        }
+
         $user->update($validated);
         
         ActivityLogger::log('user_updated', 'User', $user->id, "Benutzer {$user->name} aktualisiert");
@@ -148,6 +141,11 @@ class UserController extends Controller
                 ->with('error', 'Sie können sich nicht selbst löschen.');
         }
         
+        if ($this->waereLetzterAdminWeg($user, 'planner', false)) {
+            return redirect()->route('admin.users.index')
+                ->with('error', 'Der letzte aktive Schuladmin kann nicht gelöscht werden.');
+        }
+
         $name = $user->name;
         $user->delete();
         
@@ -189,9 +187,27 @@ class UserController extends Controller
     }
 
     /**
-     * Jeder Nutzer gehört zu der einen Schule — auch ein
-     * Super-Admin, denn lokal plant er mit (User::isSchoolPlanner()). Ohne
-     * Schule landete er im Admin-Dashboard ohne Planungsmenü.
+     * Verliert die Installation mit dieser Änderung ihren letzten aktiven
+     * Schuladmin? Dann käme niemand mehr an die Benutzerverwaltung.
+     */
+    private function waereLetzterAdminWeg(User $user, string $neueRolle, bool $bleibtAktiv): bool
+    {
+        if (! $user->isAdmin() || ! $user->is_active) {
+            return false;
+        }
+        if ($neueRolle === 'admin' && $bleibtAktiv) {
+            return false;
+        }
+
+        return ! User::query()
+            ->where('role', 'admin')
+            ->where('is_active', true)
+            ->whereKeyNot($user->getKey())
+            ->exists();
+    }
+
+    /**
+     * Jeder Nutzer gehört zu der einen Schule der Installation.
      *
      * @param  array<string, mixed>  $daten
      * @return array<string, mixed>

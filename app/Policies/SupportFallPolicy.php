@@ -22,7 +22,7 @@ class SupportFallPolicy
      */
     public function view(User $user, SupportFall $fall): bool
     {
-        if ($user->isSuperAdmin()) {
+        if ($user->isAdmin()) {
             return true;
         }
 
@@ -40,6 +40,6 @@ class SupportFallPolicy
     /** Status und Bearbeitung sind allein Sache des Supports. */
     public function bearbeiten(User $user, SupportFall $fall): bool
     {
-        return $user->isSuperAdmin();
+        return $user->isAdmin();
     }
 }

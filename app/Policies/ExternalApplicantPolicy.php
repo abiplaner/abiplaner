@@ -32,7 +32,7 @@ class ExternalApplicantPolicy
      */
     public function create(User $user): bool
     {
-        return in_array($user->role, ['planner', 'super_admin']);
+        return in_array($user->role, ['planner', 'admin']);
     }
 
     /**
@@ -41,7 +41,7 @@ class ExternalApplicantPolicy
      */
     public function update(User $user, ExternalApplicant $externalApplicant): bool
     {
-        return in_array($user->role, ['planner', 'super_admin']);
+        return in_array($user->role, ['planner', 'admin']);
     }
 
     /**
@@ -50,7 +50,7 @@ class ExternalApplicantPolicy
      */
     public function delete(User $user, ExternalApplicant $externalApplicant): bool
     {
-        return in_array($user->role, ['planner', 'super_admin']);
+        return in_array($user->role, ['planner', 'admin']);
     }
 
     /**
@@ -58,7 +58,7 @@ class ExternalApplicantPolicy
      */
     public function restore(User $user, ExternalApplicant $externalApplicant): bool
     {
-        return in_array($user->role, ['planner', 'super_admin']);
+        return in_array($user->role, ['planner', 'admin']);
     }
 
     /**
@@ -66,6 +66,6 @@ class ExternalApplicantPolicy
      */
     public function forceDelete(User $user, ExternalApplicant $externalApplicant): bool
     {
-        return $user->role === 'super_admin';
+        return $user->role === 'admin';
     }
 }

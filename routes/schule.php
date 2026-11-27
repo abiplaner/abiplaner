@@ -100,7 +100,7 @@ Route::middleware($middleware)->group(function () {
     }); // Ende abgeschaltet (Support)
     
     // Prüfungszeitraum-Verwaltung (nur auf Dashboard)
-    Route::middleware(CheckRole::class . ':planner,super_admin')->group(function () {
+    Route::middleware(CheckRole::class . ':planner,admin')->group(function () {
         Route::post('/exam-periods', [ExamPeriodController::class, 'store'])->name('exam-periods.store');
         Route::put('/exam-periods/{examPeriod}', [ExamPeriodController::class, 'update'])->name('exam-periods.update');
         Route::delete('/exam-periods/{examPeriod}', [ExamPeriodController::class, 'destroy'])->name('exam-periods.destroy');
@@ -109,7 +109,7 @@ Route::middleware($middleware)->group(function () {
     });
     
     // Planung (Planner+) - arbeitet mit aktivem Prüfungszeitraum
-    Route::middleware(CheckRole::class . ':planner,super_admin')->group(function () {
+    Route::middleware(CheckRole::class . ':planner,admin')->group(function () {
         // Hauptplanungsbereich
         Route::get('/planning', [PlanningController::class, 'index'])->name('planning.index');
         Route::post('/planning/auto-schedule', [PlanningController::class, 'autoSchedule'])->name('planning.auto');
@@ -217,12 +217,17 @@ Route::middleware($middleware)->group(function () {
         Route::post('/absences/students/{student}/measures', [AbsenceMeasureController::class, 'store'])->name('absences.measures.store');
         Route::delete('/absences/students/{student}/measures/{measure}', [AbsenceMeasureController::class, 'destroy'])->name('absences.measures.destroy');
         
-        // Backup-Verwaltung (Planer)
-        Route::get('/backups', [BackupController::class, 'index'])->name('backups.index');
-        Route::post('/backups/create', [BackupController::class, 'create'])->name('backups.create');
-        Route::post('/backups/restore', [BackupController::class, 'restore'])->name('backups.restore');
-        Route::post('/backups/delete', [BackupController::class, 'delete'])->name('backups.delete');
-        Route::post('/backups/download', [BackupController::class, 'download'])->name('backups.download');
+        // Sicherungen (nur Schuladmin): Wiederherstellen und Zurücksetzen
+        // ersetzen die ganze Datenbank samt Benutzerkonten.
+        Route::middleware(CheckRole::class . ':admin')->group(function () {
+            Route::get('/backups', [BackupController::class, 'index'])->name('backups.index');
+            Route::post('/backups/create', [BackupController::class, 'create'])->name('backups.create');
+            Route::post('/backups/restore', [BackupController::class, 'restore'])->name('backups.restore');
+            Route::post('/backups/delete', [BackupController::class, 'delete'])->name('backups.delete');
+            Route::post('/backups/download', [BackupController::class, 'download'])->name('backups.download');
+            Route::post('/backups/ordner', [BackupController::class, 'ordnerOeffnen'])->name('backups.ordner');
+            Route::post('/backups/zuruecksetzen', [BackupController::class, 'zuruecksetzen'])->name('backups.zuruecksetzen');
+        });
 
         // Schuljahreswechsel-Wizard (Modul 1.1, Phase 4)
         Route::prefix('schuljahreswechsel')->name('year-change.')->group(function () {
@@ -244,7 +249,7 @@ Route::middleware($middleware)->group(function () {
     });
     
     // Kursverwaltung (Planner+)
-    Route::middleware(CheckRole::class . ':planner,super_admin')->group(function () {
+    Route::middleware(CheckRole::class . ':planner,admin')->group(function () {
         Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
         Route::get('/courses/export-pdf', [CourseController::class, 'exportPdf'])->name('courses.export-pdf');
         Route::get('/courses/export-written-pdf', [CourseController::class, 'exportWrittenPdf'])->name('courses.export-written-pdf');
@@ -266,7 +271,7 @@ Route::middleware($middleware)->group(function () {
     });
     
     // Lehrer-Verwaltung (Planner+)
-    Route::middleware(CheckRole::class . ':planner,super_admin')->group(function () {
+    Route::middleware(CheckRole::class . ':planner,admin')->group(function () {
         Route::post('/teachers/bulk-destroy', [TeacherController::class, 'bulkDestroy'])->name('teachers.bulk-destroy');
         Route::resource('teachers', TeacherController::class);
         Route::get('/teachers/{teacher}/availability', [TeacherController::class, 'getAvailability'])->name('teachers.availability');
@@ -284,19 +289,19 @@ Route::middleware($middleware)->group(function () {
     });
     
     // Stundenraster-Verwaltung (Planner+)
-    Route::middleware(CheckRole::class . ':planner,super_admin')->group(function () {
+    Route::middleware(CheckRole::class . ':planner,admin')->group(function () {
         Route::get('/school-periods', [\App\Http\Controllers\SchoolPeriodController::class, 'index'])->name('school-periods.index');
         Route::post('/school-periods', [\App\Http\Controllers\SchoolPeriodController::class, 'store'])->name('school-periods.store');
     });
 
     // Schuleinstellungen (Planner+)
-    Route::middleware(CheckRole::class . ':planner,super_admin')->group(function () {
+    Route::middleware(CheckRole::class . ':planner,admin')->group(function () {
         Route::get('/school-settings', [SchoolSettingsController::class, 'index'])->name('school-settings.index');
         Route::post('/school-settings', [SchoolSettingsController::class, 'update'])->name('school-settings.update');
     });
 
     // Einrichtung / Onboarding (Modul 6.2)
-    Route::middleware(CheckRole::class . ':planner,super_admin')->group(function () {
+    Route::middleware(CheckRole::class . ':planner,admin')->group(function () {
         Route::get('/einrichtung', [\App\Http\Controllers\SetupController::class, 'index'])->name('setup.index');
         Route::get('/einrichtung/importe', [\App\Http\Controllers\SetupController::class, 'importe'])->name('setup.imports');
         Route::get('/einrichtung/importe/{schluessel}/vorlage', [\App\Http\Controllers\SetupController::class, 'vorlage'])
@@ -309,7 +314,7 @@ Route::middleware($middleware)->group(function () {
     // Kapitel sind zentraler Bestand und brauchen keinen Mandanten mehr.
 
     // Raum-Verwaltung (Planner+)
-    Route::middleware(CheckRole::class . ':planner,super_admin')->group(function () {
+    Route::middleware(CheckRole::class . ':planner,admin')->group(function () {
         Route::get('/rooms', [RoomController::class, 'index'])->name('rooms.index');
         Route::get('/rooms/create', [RoomController::class, 'create'])->name('rooms.create');
         Route::post('/rooms', [RoomController::class, 'store'])->name('rooms.store');
@@ -345,7 +350,7 @@ Route::middleware($middleware)->group(function () {
     });
     
     // Zeitslot-Verwaltung (Planner+) - Unterpunkt von Planning
-    Route::middleware(CheckRole::class . ':planner,super_admin')->prefix('planning')->group(function () {
+    Route::middleware(CheckRole::class . ':planner,admin')->prefix('planning')->group(function () {
         Route::get('/time-slots', [\App\Http\Controllers\TimeSlotController::class, 'index'])->name('planning.time-slots.index');
         Route::post('/exam-periods/{examPeriod}/time-slots', [\App\Http\Controllers\TimeSlotController::class, 'store'])->name('planning.time-slots.store');
         Route::post('/exam-periods/{examPeriod}/time-slots/assign-template', [\App\Http\Controllers\TimeSlotController::class, 'assignTemplate'])->name('planning.time-slots.assign-template');
@@ -354,7 +359,7 @@ Route::middleware($middleware)->group(function () {
     });
     
     // Zeitslot-Template-Verwaltung (Planner+)
-    Route::middleware(CheckRole::class . ':planner,super_admin')->prefix('exam-periods/{examPeriod}')->group(function () {
+    Route::middleware(CheckRole::class . ':planner,admin')->prefix('exam-periods/{examPeriod}')->group(function () {
         Route::get('/slot-templates', [SlotTemplateController::class, 'index'])->name('slot-templates.index');
         Route::get('/slot-templates/create', [SlotTemplateController::class, 'create'])->name('slot-templates.create');
         Route::post('/slot-templates', [SlotTemplateController::class, 'store'])->name('slot-templates.store');
@@ -370,7 +375,7 @@ Route::middleware($middleware)->group(function () {
     });
     
     // Aufsichtsplanung (Planner+)
-    Route::middleware(CheckRole::class . ':planner,super_admin')->prefix('exam-periods/{examPeriod}/supervisions')->group(function () {
+    Route::middleware(CheckRole::class . ':planner,admin')->prefix('exam-periods/{examPeriod}/supervisions')->group(function () {
         Route::get('/', [SupervisionController::class, 'index'])->name('supervisions.index');
         Route::get('/export-pdf', [SupervisionController::class, 'exportPdf'])->name('supervisions.export-pdf');
         // Neue Export-Routen (Gesamtplan, Lehrkräfte, Unterschriftsbögen)
@@ -417,7 +422,7 @@ Route::middleware($middleware)->group(function () {
     Route::get('/students/subjects/export/excel', [StudentController::class, 'exportSubjectsExcel'])->name('students.subjects.export.excel');
     
     // Schülerverwaltung (nur Planner+)
-    Route::middleware(CheckRole::class . ':planner,super_admin')->group(function () {
+    Route::middleware(CheckRole::class . ':planner,admin')->group(function () {
         Route::get('/students/create', [StudentController::class, 'create'])->name('students.create');
         Route::post('/students', [StudentController::class, 'store'])->name('students.store');
         Route::get('/students/{student}/edit', [StudentController::class, 'edit'])->name('students.edit');
@@ -437,7 +442,7 @@ Route::middleware($middleware)->group(function () {
         ->name('external-applicants.index');
     
     // Verwaltung nur für Planner+
-    Route::middleware(CheckRole::class . ':planner,super_admin')->group(function () {
+    Route::middleware(CheckRole::class . ':planner,admin')->group(function () {
         // WICHTIG: /create MUSS VOR /{externalApplicant} stehen!
         Route::get('/external-applicants/create', [\App\Http\Controllers\ExternalApplicantController::class, 'create'])
             ->name('external-applicants.create');
@@ -497,7 +502,7 @@ Route::middleware($middleware)->group(function () {
         Route::get('/dates', [WrittenExamDateController::class, 'index'])->name('dates.index');
 
         // Tages-Zuordnung (Planer+) – MUSS vor /{writtenExamDate} stehen!
-        Route::middleware(\App\Http\Middleware\CheckRole::class . ':planner,super_admin')->group(function () {
+        Route::middleware(\App\Http\Middleware\CheckRole::class . ':planner,admin')->group(function () {
             Route::get('/dates/day/{day}/assign', [WrittenExamDateController::class, 'dayAssign'])
                 ->name('dates.day-assign')
                 ->where('day', '\d{4}-\d{2}-\d{2}');
@@ -517,7 +522,7 @@ Route::middleware($middleware)->group(function () {
         // an, die Tageszuordnung macht dates.day-assign.
 
         // Prüfungsmaterialien (Planer+)
-        Route::middleware(CheckRole::class . ':planner,super_admin')->prefix('materials')->name('materials.')->group(function () {
+        Route::middleware(CheckRole::class . ':planner,admin')->prefix('materials')->name('materials.')->group(function () {
             Route::get('/', [\App\Http\Controllers\ExamMaterialController::class, 'index'])
                 ->name('index');
             Route::get('/create', [\App\Http\Controllers\ExamMaterialController::class, 'create'])
@@ -535,7 +540,7 @@ Route::middleware($middleware)->group(function () {
         });
         
         // Raumzuordnungen & Sitzpläne (Planer+)
-        Route::middleware(CheckRole::class . ':planner,super_admin')->group(function () {
+        Route::middleware(CheckRole::class . ':planner,admin')->group(function () {
             Route::get('/dates/{writtenExamYearDate}/assignments', [\App\Http\Controllers\WrittenExamAssignmentController::class, 'index'])
                 ->name('assignments.index');
             // Kein create/store/edit/update/edit-all/update-all mehr
@@ -576,7 +581,7 @@ Route::middleware($middleware)->group(function () {
         });
         
         // Aufsichtsverteilung (Planer+)
-        Route::middleware(CheckRole::class . ':planner,super_admin')->group(function () {
+        Route::middleware(CheckRole::class . ':planner,admin')->group(function () {
             // Aufsichtsraster (MUSS zuerst stehen)
             Route::get('/supervisions/grids', [\App\Http\Controllers\WrittenExamSupervisionGridController::class, 'index'])
                 ->name('supervisions.grids.index');
@@ -630,7 +635,7 @@ Route::middleware($middleware)->group(function () {
         });
         
         // Formulare (Mantelbögen etc.) – Planer+
-        Route::middleware(CheckRole::class . ':planner,super_admin')->prefix('forms')->name('forms.')->group(function () {
+        Route::middleware(CheckRole::class . ':planner,admin')->prefix('forms')->name('forms.')->group(function () {
             Route::get('/', [\App\Http\Controllers\WrittenExamFormController::class, 'index'])->name('index');
             Route::post('/mantelbogen', [\App\Http\Controllers\WrittenExamFormController::class, 'mantelbogen'])->name('mantelbogen');
             Route::get('/fachausschuesse/pdf', [\App\Http\Controllers\WrittenExamFormController::class, 'fachausschuessePdf'])->name('fachausschuesse.pdf');
@@ -646,7 +651,7 @@ Route::middleware($middleware)->group(function () {
             ->name('teacher-deployment.export-excel');
 
         // Exports (Planer+)
-        Route::middleware(CheckRole::class . ':planner,super_admin')->prefix('exports')->name('exports.')->group(function () {
+        Route::middleware(CheckRole::class . ':planner,admin')->prefix('exports')->name('exports.')->group(function () {
             // Einzelkurs-Exports
             Route::get('/dates/{writtenExamYearDate}/assignments/{writtenExamAssignment}/seating-plan', [\App\Http\Controllers\ExportController::class, 'seatingPlan'])
                 ->name('seating-plan');
@@ -718,7 +723,7 @@ Route::middleware($middleware)->group(function () {
         ->name('calendar.regenerate-token');
     
     // Timetable Routes (Stundenplan & Klausurenplanung)
-    Route::middleware(CheckRole::class . ':planner,super_admin')->prefix('timetable')->name('timetable.')->group(function () {
+    Route::middleware(CheckRole::class . ':planner,admin')->prefix('timetable')->name('timetable.')->group(function () {
         Route::redirect('/', '/timetable/exam-schedule')->name('index');
         Route::get('/view', [\App\Http\Controllers\TimetableController::class, 'view'])->name('view');
         Route::get('/upload', [\App\Http\Controllers\TimetableController::class, 'upload'])->name('upload');
@@ -767,7 +772,7 @@ Route::middleware($middleware)->group(function () {
     });
 
     // Leistungsfach-Zuteilung Routes
-    Route::middleware(CheckRole::class . ':planner,super_admin')->prefix('lk-wahlen')->name('lk-wahlen.')->group(function () {
+    Route::middleware(CheckRole::class . ':planner,admin')->prefix('lk-wahlen')->name('lk-wahlen.')->group(function () {
         Route::get('/', [\App\Http\Controllers\LkWahlController::class, 'index'])->name('index');
         Route::get('/subject-details', [\App\Http\Controllers\LkWahlController::class, 'getSubjectDetails'])->name('subject-details');
         Route::get('/create', [\App\Http\Controllers\LkWahlController::class, 'create'])->name('create');
@@ -782,7 +787,7 @@ Route::middleware($middleware)->group(function () {
         Route::delete('/{id}', [\App\Http\Controllers\LkWahlController::class, 'destroy'])->name('destroy');
     });
 
-    Route::middleware(CheckRole::class . ':planner,super_admin')->prefix('lk-kurse')->name('lk-kurse.')->group(function () {
+    Route::middleware(CheckRole::class . ':planner,admin')->prefix('lk-kurse')->name('lk-kurse.')->group(function () {
         Route::get('/', [\App\Http\Controllers\LkKursController::class, 'index'])->name('index');
         Route::get('/planen', [\App\Http\Controllers\LkZuteilungController::class, 'planen'])->name('planen');
         Route::post('/berechne', [\App\Http\Controllers\LkZuteilungController::class, 'berechne'])->name('berechne');
@@ -800,7 +805,7 @@ Route::middleware($middleware)->group(function () {
     });
 
     // W-Seminar-Wahlen Routes
-    Route::middleware(CheckRole::class . ':planner,super_admin')->prefix('wseminar-wahlen')->name('wseminar-wahlen.')->group(function () {
+    Route::middleware(CheckRole::class . ':planner,admin')->prefix('wseminar-wahlen')->name('wseminar-wahlen.')->group(function () {
         Route::get('/', [\App\Http\Controllers\WseminarWahlController::class, 'index'])->name('index');
         Route::get('/import', [\App\Http\Controllers\WseminarWahlController::class, 'import'])->name('import');
         Route::post('/import', [\App\Http\Controllers\WseminarWahlController::class, 'storeImport'])->name('store-import');
@@ -810,7 +815,7 @@ Route::middleware($middleware)->group(function () {
     });
 
     // W-Seminar-Kurse Routes
-    Route::middleware(CheckRole::class . ':planner,super_admin')->prefix('wseminar-kurse')->name('wseminar-kurse.')->group(function () {
+    Route::middleware(CheckRole::class . ':planner,admin')->prefix('wseminar-kurse')->name('wseminar-kurse.')->group(function () {
         Route::get('/', [\App\Http\Controllers\WseminarKursController::class, 'index'])->name('index');
         Route::get('/planen', [\App\Http\Controllers\WseminarZuteilungController::class, 'planen'])->name('planen');
         Route::get('/planen/export-pdf', [\App\Http\Controllers\WseminarZuteilungController::class, 'exportPdf'])->name('planen.export-pdf');
@@ -824,7 +829,7 @@ Route::middleware($middleware)->group(function () {
     });
 
     // Zusatzprüfungen
-    Route::middleware(CheckRole::class . ':planner,super_admin')
+    Route::middleware(CheckRole::class . ':planner,admin')
         ->prefix('zusatzpruefungen')
         ->name('zusatzpruefungen.')
         ->group(function () {

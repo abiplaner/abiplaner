@@ -13,7 +13,7 @@ class GlobalCalendarEventPolicy
     public function viewAny(User $user): bool
     {
         // Nur Super-Admins können globale Kalender-Events verwalten
-        return $user->isSuperAdmin();
+        return $user->isAdmin();
     }
 
     /**
@@ -22,7 +22,7 @@ class GlobalCalendarEventPolicy
     public function view(User $user, GlobalCalendarEvent $globalCalendarEvent): bool
     {
         // Nur Super-Admins können globale Events sehen
-        return $user->isSuperAdmin();
+        return $user->isAdmin();
     }
 
     /**
@@ -31,7 +31,7 @@ class GlobalCalendarEventPolicy
     public function create(User $user): bool
     {
         // Nur Super-Admins können globale Events erstellen
-        return $user->isSuperAdmin();
+        return $user->isAdmin();
     }
 
     /**
@@ -40,7 +40,7 @@ class GlobalCalendarEventPolicy
     public function update(User $user, GlobalCalendarEvent $globalCalendarEvent): bool
     {
         // Nur Super-Admins können globale Events bearbeiten
-        return $user->isSuperAdmin();
+        return $user->isAdmin();
     }
 
     /**
@@ -49,7 +49,7 @@ class GlobalCalendarEventPolicy
     public function delete(User $user, GlobalCalendarEvent $globalCalendarEvent): bool
     {
         // Nur Super-Admins können globale Events löschen
-        return $user->isSuperAdmin();
+        return $user->isAdmin();
     }
 
     /**
@@ -58,7 +58,7 @@ class GlobalCalendarEventPolicy
     public function restore(User $user, GlobalCalendarEvent $globalCalendarEvent): bool
     {
         // Nur Super-Admins können globale Events wiederherstellen
-        return $user->isSuperAdmin();
+        return $user->isAdmin();
     }
 
     /**
@@ -67,6 +67,6 @@ class GlobalCalendarEventPolicy
     public function forceDelete(User $user, GlobalCalendarEvent $globalCalendarEvent): bool
     {
         // Nur Super-Admins können globale Events permanent löschen
-        return $user->isSuperAdmin();
+        return $user->isAdmin();
     }
 }

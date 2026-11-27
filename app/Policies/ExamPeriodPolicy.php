@@ -29,7 +29,7 @@ class ExamPeriodPolicy
     public function create(User $user): bool
     {
         // Nur Superadmins können globale ExamPeriods erstellen
-        return $user->isSuperAdmin();
+        return $user->isAdmin();
     }
 
     /**
@@ -38,7 +38,7 @@ class ExamPeriodPolicy
     public function update(User $user, ExamPeriod $examPeriod): bool
     {
         // Nur Superadmins können globale ExamPeriods bearbeiten (Stammdaten)
-        return $user->isSuperAdmin();
+        return $user->isAdmin();
     }
 
     /**
@@ -47,7 +47,7 @@ class ExamPeriodPolicy
      */
     public function managePlanning(User $user, ExamPeriod $examPeriod): bool
     {
-        return $user->isSuperAdmin() || $user->isPlanner();
+        return $user->isAdmin() || $user->isPlanner();
     }
 
     /**
@@ -56,7 +56,7 @@ class ExamPeriodPolicy
     public function delete(User $user, ExamPeriod $examPeriod): bool
     {
         // Nur Superadmins können globale ExamPeriods löschen
-        return $user->isSuperAdmin();
+        return $user->isAdmin();
     }
 
     /**
@@ -67,6 +67,6 @@ class ExamPeriodPolicy
      */
     public function lock(User $user, ExamPeriod $examPeriod): bool
     {
-        return $user->isSuperAdmin();
+        return $user->isAdmin();
     }
 }

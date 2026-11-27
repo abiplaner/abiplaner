@@ -32,17 +32,9 @@ class PlanningController extends Controller
             return $user->school_id;
         }
         
-        // Fallback für Super Admin: Erste Schule nehmen.
-        // school_number, nicht id: Die Tabelle `schools` hat keine Spalte
-        // `id`. Bis zum 31.08.2026 stand hier `School::first()->id ?? null`
-        // — das ergab immer null, und jeder Ausdruck, den ein Super-Admin
-        // anstieß, lief anschließend ohne Schulkopf. Fünfte Erscheinungsform
-        // des Schulnummer-Fehlers.
-        if ($user->isSuperAdmin() || $user->email === 'admin@example.com') {
-            return \App\Models\School::first()?->school_number;
-        }
-        
-        return null;
+        // Es gibt genau eine Schule je Installation (school_number, nicht id:
+        // `schools` hat keine Spalte `id`).
+        return \App\Models\School::first()?->school_number;
     }
     
     /**

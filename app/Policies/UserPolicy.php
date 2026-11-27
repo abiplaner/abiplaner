@@ -11,7 +11,7 @@ class UserPolicy
      */
     public function before(User $user): ?bool
     {
-        if ($user->role === 'super_admin') {
+        if ($user->role === 'admin') {
             return true;
         }
         
@@ -42,7 +42,7 @@ class UserPolicy
     public function create(User $user): bool
     {
         // Nur Super Admins können Benutzer erstellen
-        return $user->role === 'super_admin';
+        return $user->role === 'admin';
     }
 
     /**
@@ -51,7 +51,7 @@ class UserPolicy
     public function update(User $user, User $model): bool
     {
         // Nur Super Admins können Benutzer bearbeiten
-        return $user->role === 'super_admin';
+        return $user->role === 'admin';
     }
 
     /**
@@ -61,6 +61,6 @@ class UserPolicy
     {
         // Nur Super Admins können Benutzer löschen
         // Niemand kann sich selbst löschen
-        return $user->role === 'super_admin' && $user->id !== $model->id;
+        return $user->role === 'admin' && $user->id !== $model->id;
     }
 }

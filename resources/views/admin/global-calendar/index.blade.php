@@ -18,9 +18,42 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
 
+            {{-- Schuljahr --}}
+            <div class="mb-4 flex flex-wrap items-center gap-3">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Schuljahr:</span>
+                <div class="flex flex-wrap rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
+                    @foreach(array_merge($schuljahre, ['alle']) as $jahr)
+                        @php $gewaehlt = $schuljahr === $jahr; @endphp
+                        <a href="{{ route('admin.global-calendar.index', array_filter([
+                                'schuljahr' => $jahr,
+                                'search' => request('search'),
+                                'type' => request('type'),
+                                'grade' => request('grade'),
+                            ])) }}"
+                           @class([
+                               'px-4 py-2 text-sm font-medium flex items-center gap-1.5 transition-colors',
+                               'border-l border-gray-300 dark:border-gray-600' => !$loop->first,
+                               'bg-indigo-600 text-white font-semibold shadow-inner' => $gewaehlt,
+                               'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600' => !$gewaehlt,
+                           ])
+                           @if($gewaehlt) aria-current="page" @endif>
+                            {{ $jahr === 'alle' ? 'Alle' : $jahr }}
+                            @if($jahr === $aktuellesSchuljahr)
+                                <span @class([
+                                    'px-1.5 py-0.5 rounded text-xs',
+                                    'bg-white/25 text-white' => $gewaehlt,
+                                    'bg-emerald-100 text-emerald-800' => !$gewaehlt,
+                                ])>aktuell</span>
+                            @endif
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+
             {{-- Such- und Filterleiste --}}
             <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg mb-4 p-4">
                 <form method="GET" action="{{ route('admin.global-calendar.index') }}" class="flex flex-wrap gap-3 items-end">
+                    <input type="hidden" name="schuljahr" value="{{ $schuljahr }}">
 
                     {{-- Suche --}}
                     <div class="flex-1 min-w-48">
@@ -73,7 +106,7 @@
                             Filtern
                         </button>
                         @if(request('search') || request('type') || request('grade'))
-                            <a href="{{ route('admin.global-calendar.index') }}"
+                            <a href="{{ route('admin.global-calendar.index', ['schuljahr' => $schuljahr]) }}"
                                class="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 text-sm flex items-center gap-1">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>

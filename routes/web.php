@@ -37,9 +37,9 @@ Route::middleware('guest')->group(function () {
         ->middleware('throttle:6,1');
 });
 
-// Admin Dashboard (only for super_admins without tenancy)
+// Angemeldete Benutzer: Profil, 2FA, Hilfe, Verwaltung
 Route::middleware(['auth', 'verified', 'track.last-page'])->group(function () {
-    // Profile Routes (für alle eingeloggten User, auch Super-Admins)
+    // Profil (alle angemeldeten Benutzer)
     Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [\App\Http\Controllers\ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -62,13 +62,9 @@ Route::middleware(['auth', 'verified', 'track.last-page'])->group(function () {
         ->where('slug', '[a-z0-9-]+')
         ->name('hilfe.show');
 
-    // Super-Admin Bereich (nur super_admin)
-    Route::middleware(\App\Http\Middleware\CheckRole::class . ':super_admin')->prefix('admin')->name('admin.')->group(function () {
-        // Security-Checkliste M1: Rollenprüfung jetzt via Middleware statt nur im Controller.
-        Route::get('/dashboard', [\App\Http\Controllers\AdminDashboardController::class, 'index'])
-            ->name('dashboard');
-
-        
+    // Verwaltung (nur Schuladmin). Security-Checkliste M1: Rollenprüfung via
+    // Middleware statt nur im Controller.
+    Route::middleware(\App\Http\Middleware\CheckRole::class . ':admin')->prefix('admin')->name('admin.')->group(function () {
         Route::resource('users', \App\Http\Controllers\UserController::class);
 
         // 2FA-Reset durch Admin (Nutzer hat TOTP-App verloren bzw. Geräte zurücksetzen)
@@ -103,19 +99,9 @@ Route::middleware(['auth', 'verified', 'track.last-page'])->group(function () {
         Route::resource('written-exam-slots', \App\Http\Controllers\WrittenExamSlotController::class)
             ->except(['show']);
         
-        // Hilfesystem (Modul 6.3): Die Kapitel sind zentraler Bestand — ein
-        // Satz Texte für alle Schulen. Die festen Pfade stehen vor der
-        // Resource, sonst schluckt {hilfeKapitel} sie.
-        Route::post('hilfe/vorschau', [\App\Http\Controllers\HilfeKapitelController::class, 'vorschau'])
-            ->name('hilfe.vorschau');
-        Route::get('hilfe/{hilfeKapitel}/versionen', [\App\Http\Controllers\HilfeKapitelController::class, 'versionen'])
-            ->name('hilfe.versionen');
-        Route::post('hilfe/{hilfeKapitel}/versionen/{version}/zurueckholen',
-            [\App\Http\Controllers\HilfeKapitelController::class, 'zurueckholen'])
-            ->name('hilfe.zurueckholen');
-        Route::resource('hilfe', \App\Http\Controllers\HilfeKapitelController::class)
-            ->parameters(['hilfe' => 'hilfeKapitel'])
-            ->except(['show']);
+        // Hilfekapitel werden nicht mehr in der Oberfläche bearbeitet: Sie
+        // kommen mit dem Programm (database/seeders/data/hilfe/*.md) und
+        // werden bei jedem Start eingespielt (27.11.2026).
 
         // Support-Fälle aller Schulen (Modul 6.4, Stufe 1). Zentral und ohne
         // Tenancy — genau dafür liegen die Fallakten in der zentralen

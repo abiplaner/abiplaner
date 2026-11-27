@@ -25,10 +25,6 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
 
-        if ($user->isCentralAdmin()) {
-            return redirect()->route('admin.dashboard');
-        }
-
         // Prüfungszeiträume (zentral)
         $periodService = app(\App\Services\CurrentExamPeriodService::class);
         $examPeriods = $periodService->all();

@@ -17,7 +17,7 @@ use Illuminate\Notifications\Notifiable;
  * @property string $password
  * @property string|null $two_factor_secret entschlüsselt via Cast
  * @property \Carbon\Carbon|null $two_factor_confirmed_at
- * @property string $role super_admin|planner
+ * @property string $role admin|planner (siehe User::ROLLEN)
  * @property bool $is_active
  * @property \Carbon\Carbon|null $last_login_at
  * @property string|null $last_visited_path Modul 1.6: zuletzt besuchte Seite, geräteübergreifend
@@ -111,47 +111,36 @@ class User extends Authenticatable
         return $this->two_factor_secret !== null && $this->two_factor_confirmed_at !== null;
     }
 
-    // Role Checks
-    public function isSuperAdmin(): bool
-    {
-        return $this->role === 'super_admin';
-    }
+    /*
+     * Rollen (seit 27.11.2026, eine Schule je Installation):
+     *
+     *   admin   — Schuladmin: plant UND verwaltet (Benutzer, Fächer, Termine,
+     *             Sicherungen, Zurücksetzen). Den ersten Benutzer legt der
+     *             Einrichtungsassistent so an; das ist fast immer der OSK.
+     *   planner — Planer: alle Planungsfunktionen, keine Verwaltung.
+     *
+     * Der frühere Super-Admin (zentrale Pflege aller Schulen) ist entfallen.
+     */
+    public const ROLLEN = [
+        'admin' => 'Schuladmin',
+        'planner' => 'Planer',
+    ];
 
+    /** Schuladmin: sieht das Menü „Verwaltung“. */
     public function isAdmin(): bool
     {
-        return in_array($this->role, ['super_admin', 'admin']);
+        return $this->role === 'admin';
     }
 
+    /** Arbeitet in der Planung (Planer und Schuladmin). */
     public function isPlanner(): bool
     {
-        return in_array($this->role, ['super_admin', 'admin', 'planner']);
+        return in_array($this->role, ['admin', 'planner'], true);
     }
 
-    /**
-     * Arbeitet in der Planung einer Schule (Schul-Dashboard, Planungsmenü).
-     *
-     * Web: Planer (und die Altrolle 'admin'). Der Super-Admin pflegt dort nur
-     * die zentralen Daten aller Schulen und landet im Admin-Dashboard.
-     *
-     * Lokal: zusätzlich der Super-Admin mit Schule. Den ersten Nutzer legt der
-     * Einrichtungsassistent als Super-Admin an, und das ist fast immer der
-     * Oberstufenkoordinator — er pflegt Stammdaten UND plant.
-     */
-    public function isSchoolPlanner(): bool
+    public function rollenName(): string
     {
-        if (in_array($this->role, ['admin', 'planner'], true)) {
-            return true;
-        }
-
-        // Der Super-Admin der Schule plant mit (meist der OSK).
-        return $this->isSuperAdmin()
-            && $this->school_id !== null;
-    }
-
-    /** Nur zentrale Verwaltung, keine Schulplanung (Super-Admin der Web-Version). */
-    public function isCentralAdmin(): bool
-    {
-        return $this->isSuperAdmin() && ! $this->isSchoolPlanner();
+        return self::ROLLEN[$this->role] ?? $this->role;
     }
 
     // Scopes

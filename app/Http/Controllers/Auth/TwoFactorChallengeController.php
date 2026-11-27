@@ -103,12 +103,6 @@ class TwoFactorChallengeController extends Controller
      */
     private function redirectAfterLogin(User $user): RedirectResponse
     {
-        if ($user->isCentralAdmin()) {
-            $default = route('admin.dashboard', absolute: false);
-
-            return redirect()->intended($this->lastVisitedPage->destinationFor($user, $default));
-        }
-
         $default = route('dashboard', absolute: false);
 
         return redirect()->intended($this->lastVisitedPage->destinationFor($user, $default));

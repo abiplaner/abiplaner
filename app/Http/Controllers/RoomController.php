@@ -44,14 +44,8 @@ class RoomController extends Controller
             return $user->school_id;
         }
         
-        // Fallback für Super Admin: Erste Schule nehmen.
-        // school_number, nicht id — `schools` hat keine Spalte `id`; siehe
-        // die ausführliche Notiz in PlanningController::getSchoolId().
-        if ($user->isSuperAdmin() || $user->email === 'admin@example.com') {
-            return \App\Models\School::first()?->school_number;
-        }
-        
-        return null;
+        // Es gibt genau eine Schule je Installation.
+        return \App\Models\School::first()?->school_number;
     }
     
     public function index()

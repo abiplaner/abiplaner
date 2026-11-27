@@ -44,35 +44,7 @@
                                 <x-text-input id="password_confirmation" class="block mt-1 w-full" type="password" name="password_confirmation" />
                             </div>
 
-                            <!-- Schule -->
-                            <div class="col-span-2">
-                                <x-input-label for="school_id" :value="__('Schule')" />
-                                <select id="school_id" name="school_id" :required="role !== 'super_admin'"
-                                    class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
-                                    <option value="">Schule wählen...</option>
-                                    @foreach($schools as $school)
-                                        <option value="{{ $school->school_number }}" {{ old('school_id', $user->school_id) == $school->school_number ? 'selected' : '' }}>
-                                            {{ $school->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <x-input-error :messages="$errors->get('school_id')" class="mt-2" />
-                            </div>
-
-                            <!-- Rolle -->
-                            <div class="col-span-2">
-                                <x-input-label for="role" :value="__('Rolle')" />
-                                <select id="role" name="role" required
-                                    class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
-                                    <option value="planner" {{ old('role', $user->role) === 'planner' ? 'selected' : '' }}>
-                                        Planer
-                                    </option>
-                                    <option value="super_admin" {{ old('role', $user->role) === 'super_admin' ? 'selected' : '' }}>
-                                        Super Admin
-                                    </option>
-                                </select>
-                                <x-input-error :messages="$errors->get('role')" class="mt-2" />
-                            </div>
+                            @include('users.partials.rolle', ['aktuell' => $user->role])
 
                             <!-- Aktiv -->
                             <div class="col-span-2">

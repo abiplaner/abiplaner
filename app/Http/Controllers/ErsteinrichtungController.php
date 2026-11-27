@@ -20,9 +20,8 @@ use Illuminate\View\View;
  * durch dieselbe stancl-Pipeline wie in der Web-Version (Variante A):
  * Datei anlegen, Tenant-Migrationen, TenantSeeder.
  *
- * Der erste Nutzer wird Super-Admin MIT Schule — das ist fast immer der
- * Oberstufenkoordinator, der lokal Stammdaten pflegt und plant
- * (User::isSchoolPlanner()).
+ * Der erste Nutzer wird Schuladmin — das ist fast immer der
+ * Oberstufenkoordinator, der Stammdaten pflegt und plant (User::isAdmin()).
  *
  * Erreichbar nur, solange es keine Schule gibt; danach 404. Die Weiterleitung
  * dorthin macht App\Http\Middleware\ErsteinrichtungErzwingen.
@@ -90,7 +89,7 @@ class ErsteinrichtungController extends Controller
             'name' => $daten['admin_name'],
             'email' => $daten['admin_email'],
             'password' => Hash::make($daten['password']),
-            'role' => 'super_admin',
+            'role' => 'admin',
             'school_id' => $schule->getKey(),
             'is_active' => true,
         ]);
