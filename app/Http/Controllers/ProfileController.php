@@ -48,6 +48,17 @@ class ProfileController extends Controller
 
         $user = $request->user();
 
+        // Der letzte aktive Schuladmin bleibt: Ohne ihn verwaltet niemand
+        // mehr Benutzer und Sicherungen.
+        $letzterAdmin = $user->isAdmin() && ! \App\Models\User::query()
+            ->where('role', 'admin')->where('is_active', true)
+            ->whereKeyNot($user->getKey())->exists();
+        if ($letzterAdmin) {
+            return back()->withErrors([
+                'password' => 'Sie sind der einzige Schuladmin. Bitte zuerst einem anderen Konto die Rolle Schuladmin geben.',
+            ], 'userDeletion');
+        }
+
         Auth::logout();
 
         $user->delete();

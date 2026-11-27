@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
     // C1 (Security-Checkliste): Öffentliche Selbstregistrierung deaktiviert.
-    // Benutzer werden ausschließlich durch Super-Admins über UserController
+    // Benutzer werden ausschließlich durch Schuladmins über UserController
     // angelegt. Am 30.08.2026 sind auch RegisteredUserController und die Maske
     // auth/register.blade.php entfallen: Ein abgeschalteter Anmeldeweg, dessen
     // Bausteine noch herumliegen, ist genau das, was C1 nicht will — und die
@@ -26,7 +26,9 @@ Route::middleware('guest')->group(function () {
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');
 
+    // Desktop-App: setzt das Passwort direkt; Schulserver: Link per E-Mail.
     Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
+        ->middleware('throttle:6,1')
         ->name('password.email');
 
     Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
