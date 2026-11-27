@@ -213,6 +213,12 @@ jobs:
                 "windows-x86_64": {signature: $win_sig, url: $win_url},
                 "linux-x86_64":   {signature: $lin_sig, url: $lin_url}}}' > latest.json
           cat latest.json
+          # Feste Namen ohne Versionsnummer für die Download-Seite: Unter
+          # …/releases/latest/download/<Name> ist so immer die neueste Fassung
+          # erreichbar (abiplaner-bayern.de/downloads/windows usw.).
+          cp "Abiplaner_${v}_aarch64.dmg" Abiplaner-macOS.dmg
+          cp "$win" Abiplaner-Windows-Setup.exe
+          cp "$lin" Abiplaner-Linux.AppImage
           sha256sum * > SHA256SUMS.txt
       - name: Release-Entwurf anlegen
         env:

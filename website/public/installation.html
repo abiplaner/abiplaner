@@ -117,31 +117,63 @@
                     Schulserver.
                 </p>
 
+                <!-- Empfehlung für das erkannte Betriebssystem (Skript unten) -->
+                <div id="empfehlung" class="not-prose my-10 hidden">
+                    <a id="empfehlung-link" href="#"
+                       class="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-white font-semibold shadow-sm hover:bg-blue-700 transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"/></svg>
+                        <span id="empfehlung-text">AbiPlaner herunterladen</span>
+                    </a>
+                    <p class="text-xs text-slate-500 mt-2 text-center">Neueste Version · andere Systeme unten</p>
+                </div>
+
                 <div class="not-prose my-10 grid sm:grid-cols-3 gap-3">
-                                            <a href="https://github.com/abiplaner/abiplaner/releases/latest" rel="noopener"
-                           class="block rounded-xl border border-slate-200 p-5 hover:border-blue-500 hover:bg-blue-50/40 transition">
-                            <div class="font-semibold text-slate-900">Windows</div>
-                            <div class="text-xs text-slate-500 mt-1">Windows 10/11, 64 Bit</div>
-                            <div class="text-xs font-mono text-slate-600 mt-3 break-all">Abiplaner_…_x64-setup.exe</div>
-                        </a>
-                                            <a href="https://github.com/abiplaner/abiplaner/releases/latest" rel="noopener"
-                           class="block rounded-xl border border-slate-200 p-5 hover:border-blue-500 hover:bg-blue-50/40 transition">
-                            <div class="font-semibold text-slate-900">macOS</div>
-                            <div class="text-xs text-slate-500 mt-1">Apple Silicon (M1 und neuer)</div>
-                            <div class="text-xs font-mono text-slate-600 mt-3 break-all">Abiplaner_…_aarch64.dmg</div>
-                        </a>
-                                            <a href="https://github.com/abiplaner/abiplaner/releases/latest" rel="noopener"
-                           class="block rounded-xl border border-slate-200 p-5 hover:border-blue-500 hover:bg-blue-50/40 transition">
-                            <div class="font-semibold text-slate-900">Linux</div>
-                            <div class="text-xs text-slate-500 mt-1">x86_64</div>
-                            <div class="text-xs font-mono text-slate-600 mt-3 break-all">Abiplaner_…_amd64.AppImage</div>
-                        </a>
-                                    </div>
+                    <div data-os="windows" class="flex flex-col rounded-xl border border-slate-200 p-5 transition">
+                        <div class="flex items-center gap-2"><span class="font-semibold text-slate-900">Windows</span>
+                            <span data-passt class="hidden rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800">Ihr System</span></div>
+                        <div class="text-xs text-slate-500 mt-1">Windows 10/11, 64 Bit</div>
+                        <a href="/downloads/windows" style="margin-top:auto"
+                           class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition">Installer laden</a>
+                        <div class="text-xs text-slate-500 mt-2">Abiplaner-Windows-Setup.exe</div>
+                    </div>
+                    <div data-os="macos" class="flex flex-col rounded-xl border border-slate-200 p-5 transition">
+                        <div class="flex items-center gap-2"><span class="font-semibold text-slate-900">macOS</span>
+                            <span data-passt class="hidden rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800">Ihr System</span></div>
+                        <div class="text-xs text-slate-500 mt-1">Apple Silicon (M1 und neuer)</div>
+                        <a href="/downloads/macos" style="margin-top:auto"
+                           class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition">DMG laden</a>
+                        <div class="text-xs text-slate-500 mt-2">Abiplaner-macOS.dmg</div>
+                    </div>
+                    <div data-os="linux" class="flex flex-col rounded-xl border border-slate-200 p-5 transition">
+                        <div class="flex items-center gap-2"><span class="font-semibold text-slate-900">Linux</span>
+                            <span data-passt class="hidden rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800">Ihr System</span></div>
+                        <div class="text-xs text-slate-500 mt-1">x86_64</div>
+                        <a href="/downloads/linux" style="margin-top:auto"
+                           class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition">AppImage laden</a>
+                        <div class="text-xs text-slate-500 mt-2">Abiplaner-Linux.AppImage</div>
+                    </div>
+                </div>
                 <p class="text-sm text-slate-500 -mt-6">
-                    Alle Dateien der neuesten Version liegen auf
-                    <a href="https://github.com/abiplaner/abiplaner/releases/latest" rel="noopener">github.com/abiplaner/abiplaner/releases</a>
-                    (unter „Assets“).
+                    Ältere Versionen, Prüfsummen und die Update-Pakete liegen auf
+                    <a href="https://github.com/abiplaner/abiplaner/releases/latest" rel="noopener">github.com/abiplaner/abiplaner/releases</a>.
                 </p>
+                <script>
+                    (function () {
+                        var ua = navigator.userAgent || '';
+                        var plattform = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '';
+                        var os = /Win/i.test(plattform + ua) ? 'windows'
+                               : /Mac|iPhone|iPad/i.test(plattform + ua) ? 'macos'
+                               : /Linux|X11/i.test(plattform + ua) && !/Android/i.test(ua) ? 'linux' : null;
+                        if (!os || /iPhone|iPad|Android/i.test(ua)) return;
+                        var namen = { windows: 'Windows', macos: 'macOS', linux: 'Linux' };
+                        var karte = document.querySelector('[data-os="' + os + '"]');
+                        karte.classList.add('ring-2', 'ring-blue-500', 'border-blue-500', 'bg-blue-50');
+                        karte.querySelector('[data-passt]').classList.remove('hidden');
+                        document.getElementById('empfehlung-link').href = '/downloads/' + os;
+                        document.getElementById('empfehlung-text').textContent = 'AbiPlaner für ' + namen[os] + ' herunterladen';
+                        document.getElementById('empfehlung').classList.remove('hidden');
+                    })();
+                </script>
 
                 <div class="my-10">
                     <h3 class="flex items-center gap-3 text-xl font-bold text-slate-900">
@@ -155,7 +187,7 @@
                     </ul>
                     <p>Beim ersten Start fragt Abiplaner, ob es <em>auf diesem Rechner</em> arbeiten oder sich mit einem
                        <em>Schulserver</em> verbinden soll. Auf diesem Rechner führt ein kurzer Assistent durch die Einrichtung
-                       der Schule; das erste Konto wird Super-Admin.</p>
+                       der Schule; das erste Konto wird Schuladmin.</p>
                 </div>
 
                 <div class="my-10">
