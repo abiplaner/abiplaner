@@ -45,7 +45,10 @@ class WrittenExamSlotController extends Controller
             ->orderBy('exam_year', 'desc')
             ->pluck('exam_year');
 
-        return view('admin.written-exam-slots.index', compact('slots', 'availableYears'));
+        // Abitur des laufenden Schuljahres (2026/27 → 2027): wird hervorgehoben.
+        $aktuellesAbitur = (int) substr(\App\Support\SchoolYear::current(), 0, 4) + 1;
+
+        return view('admin.written-exam-slots.index', compact('slots', 'availableYears', 'aktuellesAbitur'));
     }
 
     public function create()

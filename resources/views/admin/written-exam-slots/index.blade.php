@@ -25,19 +25,29 @@
                 <div class="flex flex-wrap items-center gap-3">
                     <span class="text-sm font-medium text-gray-700">Jahrestermine verwalten:</span>
                     @foreach($availableYears as $year)
-                        <a href="{{ route('admin.written-exam-slots.year-dates', $year) }}"
-                           class="px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-md text-sm font-medium hover:bg-indigo-200">
-                            Abitur {{ $year }}
-                        </a>
+                        @if((int) $year === $aktuellesAbitur)
+                            <a href="{{ route('admin.written-exam-slots.year-dates', $year) }}"
+                               aria-current="true" title="Abitur des laufenden Schuljahres"
+                               class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-md text-sm font-semibold shadow-sm ring-2 ring-indigo-300 hover:bg-indigo-700">
+                                <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-300"></span>
+                                Abitur {{ $year }} <span class="font-normal text-indigo-100">· aktuell</span>
+                            </a>
+                        @else
+                            <a href="{{ route('admin.written-exam-slots.year-dates', $year) }}"
+                               class="px-3 py-1.5 {{ (int) $year < $aktuellesAbitur ? 'bg-gray-100 text-gray-500 hover:bg-gray-200' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100' }} rounded-md text-sm font-medium">
+                                Abitur {{ $year }}
+                            </a>
+                        @endif
                     @endforeach
-                    {{-- Nächstes Jahr vorschlagen --}}
-                    @php $nextYear = now()->month >= 6 ? now()->year + 1 : now()->year; @endphp
-                    @if(!$availableYears->contains($nextYear))
-                        <a href="{{ route('admin.written-exam-slots.year-dates', $nextYear) }}"
-                           class="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-md text-sm hover:bg-gray-200 border border-dashed border-gray-400">
-                            + Abitur {{ $nextYear }} anlegen
-                        </a>
-                    @endif
+                    {{-- Fehlende Jahre vorschlagen: das laufende, ab Juni auch das nächste --}}
+                    @foreach(array_filter([$aktuellesAbitur, now()->month >= 6 ? $aktuellesAbitur + 1 : null]) as $vorschlag)
+                        @if(!$availableYears->contains($vorschlag))
+                            <a href="{{ route('admin.written-exam-slots.year-dates', $vorschlag) }}"
+                               class="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-md text-sm hover:bg-gray-200 border border-dashed border-gray-400">
+                                + Abitur {{ $vorschlag }} anlegen
+                            </a>
+                        @endif
+                    @endforeach
                 </div>
             </div>
 
