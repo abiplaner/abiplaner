@@ -7,38 +7,43 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\File;
 
 /**
- * Erstbefuellung des Hilfesystems (Modul 6.3, zweite Stufe).
+ * Spielt die Hilfekapitel ein (Modul 6.3).
  *
- * Die Kapitel liegen seit dem 29.08.2026 in der zentralen Datenbank und sind
- * dort redigierbar. Die Markdown-Dateien unter `database/seeders/data/hilfe/`
- * sind seither **nicht mehr das Hilfesystem**, sondern nur noch die
- * Grundfassung: Sie fuellen eine frische Installation, versorgen die CI mit
- * einem Bestand zum Pruefen und tragen kuenftige Ergaenzungen als
- * nachvollziehbaren Diff nach.
+ * **Die Markdown-Dateien unter `database/seeders/data/hilfe/` sind die
+ * Hilfe** (seit 27.11.2026). Die Kapitel werden nicht mehr in der Oberfläche
+ * bearbeitet, sondern zentral im Repository gepflegt und kommen mit jedem
+ * Programm-Update; `abiplaner:vorbereiten` ruft den Seeder bei jedem Start.
+ * Die Datenbank ist nur noch der Suchbestand: Abweichungen werden auf den
+ * Stand der Dateien gebracht, Kapitel ohne Datei entfernt.
  *
- * **Der Seeder ist die einzige Quelle der Grundfassung, die Migration ruft
- * ihn nur.** Dasselbe Muster wie beim Faecherkatalog — dort hat eine Migration
- * mit eigener Kopie der Daten jeder frischen Installation den falschen Stand
- * zurueckgegeben (siehe `2026_08_25_230500_sync_subjects_catalog_with_seeder`).
- *
- * **Redigierte Kapitel werden nicht angefasst.** Was ein Mensch geaendert hat,
- * darf ein spaeterer Seeder-Lauf nicht ueberschreiben; erkannt wird das am
- * Fingerabdruck der zuletzt eingespielten Grundfassung.
+ * Dasselbe Muster wie beim Faecherkatalog — eine Migration mit eigener Kopie
+ * der Daten gäbe jeder frischen Installation den falschen Stand zurück
+ * (siehe `2026_08_25_230500_sync_subjects_catalog_with_seeder`).
  */
 class HilfeKapitelSeeder extends Seeder
 {
     /**
      * Zaehler des letzten Laufs — fuer den Befehl und die Tests.
      *
-     * @var array{neu: int, aktualisiert: int, unveraendert: int, redigiert: int}
+     * @var array{neu: int, aktualisiert: int, unveraendert: int, entfernt: int}
      */
-    public array $bilanz = ['neu' => 0, 'aktualisiert' => 0, 'unveraendert' => 0, 'redigiert' => 0];
+    public array $bilanz = ['neu' => 0, 'aktualisiert' => 0, 'unveraendert' => 0, 'entfernt' => 0];
 
     public function run(): void
     {
-        $this->bilanz = ['neu' => 0, 'aktualisiert' => 0, 'unveraendert' => 0, 'redigiert' => 0];
+        $this->bilanz = ['neu' => 0, 'aktualisiert' => 0, 'unveraendert' => 0, 'entfernt' => 0];
 
-        foreach ($this->grundfassung() as $slug => $werte) {
+        $grundfassung = $this->grundfassung();
+
+        // Ohne lesbare Dateien nichts löschen: Ein kaputtes Paket darf die
+        // Hilfe nicht leeren.
+        if ($grundfassung !== []) {
+            $this->bilanz['entfernt'] = HilfeKapitel::query()
+                ->whereNotIn('slug', array_keys($grundfassung))
+                ->delete();
+        }
+
+        foreach ($grundfassung as $slug => $werte) {
             $kapitel = HilfeKapitel::query()->where('slug', $slug)->first();
             $hash = HilfeKapitel::fingerabdruckAus($werte);
 
@@ -52,13 +57,7 @@ class HilfeKapitelSeeder extends Seeder
                 continue;
             }
 
-            if ($kapitel->istRedigiert()) {
-                $this->bilanz['redigiert']++;
-
-                continue;
-            }
-
-            if ($kapitel->grundfassung_hash === $hash) {
+            if ($kapitel->grundfassung_hash === $hash && ! $kapitel->istRedigiert()) {
                 $this->bilanz['unveraendert']++;
 
                 continue;

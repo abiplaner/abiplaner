@@ -6,8 +6,14 @@ routen: backups
 stichworte: backup, sicherung, wiederherstellen, restore, datensicherung
 ---
 
-Die Seite sichert **die Datenbank Ihrer Schule** — alles, was in der Anwendung
-zu dieser Schule gespeichert ist.
+Die Seite (nur für Schuladmins) sichert **die gesamte Datenbank** — alles, was
+in der Anwendung gespeichert ist, auch die Benutzerkonten.
+
+Abiplaner sichert außerdem selbst: einmal täglich und vor jedem
+Programm-Update. Oben steht der **Speicherort** der Sicherungen; in der
+Desktop-App öffnet ein Knopf den Ordner im Explorer bzw. Finder. Kopieren Sie
+die Sicherungen regelmäßig auf ein anderes Laufwerk — eine Sicherung auf
+demselben Rechner hilft nicht, wenn der Rechner ausfällt.
 
 ## Erstellen
 
@@ -37,6 +43,16 @@ Vor jedem Schritt, der viel auf einmal verändert:
 - vor einem großen **Import**, der bestehende Daten ersetzt,
 - vor dem Löschen eines Prüfungszeitraums,
 - vor einer **LK-Zuteilung**, die Kurse neu anlegt.
+
+## Abiplaner zurücksetzen
+
+Ganz unten auf der Seite: löscht **alle Daten** — Schule, Benutzerkonten,
+Schüler, Lehrkräfte, Planungen — und startet neu mit der Einrichtung. Zur
+Bestätigung tippen Sie das Wort ZURÜCKSETZEN ein und geben Ihr Passwort an.
+
+Vorher legt Abiplaner automatisch eine Sicherung „vor-zuruecksetzen“ an. Sie
+bleibt im Sicherungsordner; nach der neuen Einrichtung können Sie sie hier
+wiederherstellen, falls das Zurücksetzen ein Versehen war.
 
 ## In der Archivansicht
 

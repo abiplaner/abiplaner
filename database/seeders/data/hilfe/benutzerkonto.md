@@ -27,17 +27,28 @@ werden gezählt. **„Alle Geräte abmelden"** erzwingt beim nächsten Anmelden
 überall wieder einen Code — der richtige Griff, wenn ein Gerät verloren ging.
 
 > **Es gibt keine Wiederherstellungscodes.** Verlieren Sie den Zugang zu Ihrer
-> Authenticator-App, kommen Sie nur über die Administration wieder hinein: Sie
-> setzt die Zwei-Faktor-Anmeldung zurück, und Sie richten sie neu ein. Richten
-> Sie die App deshalb möglichst auf einem Gerät ein, das Sie behalten, oder
-> sichern Sie den QR-Code beim Einrichten.
+> Authenticator-App, setzt ein Schuladmin die Zwei-Faktor-Anmeldung zurück, und
+> Sie richten sie neu ein. In der Desktop-App geht das auch über „Passwort
+> vergessen?“ auf der Anmeldeseite.
+
+## Passwort vergessen
+
+- **Desktop-App:** Auf der Anmeldeseite „Passwort vergessen?“ wählen, das Konto
+  aussuchen und ein neues Passwort vergeben. Das geht nur in der App auf dem
+  Rechner, auf dem die Daten liegen.
+- **Schulserver:** „Passwort vergessen?“ schickt einen Link an Ihre
+  E-Mail-Adresse, sofern der Server E-Mails verschicken kann. Sonst setzt ein
+  Schuladmin das Passwort unter *Verwaltung → Benutzer* neu. Wer den Server
+  betreut, kann außerdem `php artisan abiplaner:passwort <E-Mail>` ausführen.
 
 ## Konto löschen
 
 Verlangt Ihr aktuelles Passwort, meldet Sie ab und löscht das Konto sofort.
+Der letzte Schuladmin kann sein Konto nicht löschen.
 
 ## Rollen
 
-Es gibt zwei: **Planer** — die Schulseite mit allen Planungsrechten — und
-**Super-Admin** für die zentrale Verwaltung. Konten legt die Administration an;
-Sie können Ihre eigene Rolle nicht ändern.
+Es gibt zwei: **Planer** — alle Planungsfunktionen — und **Schuladmin** —
+zusätzlich das Menü *Verwaltung* (Benutzer, Fächer, Termine, Sicherungen).
+Den ersten Schuladmin legt die Einrichtung an; weitere Konten legen
+Schuladmins an. Sie können Ihre eigene Rolle nicht ändern.

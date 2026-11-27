@@ -8,15 +8,15 @@ use Illuminate\Console\Command;
 /**
  * Spielt die Grundfassung der Hilfekapitel ein (Roadmap 6.3).
  *
- * Derselbe Seeder, den die Migration ruft — hier von Hand, wenn im Repo neue
- * Kapitel dazugekommen sind. **Redigierte Kapitel bleiben unangetastet**; der
- * Lauf sagt, wie viele das waren.
+ * Läuft bei jedem Start (abiplaner:vorbereiten). Die Markdown-Dateien im
+ * Repository sind die einzige Quelle; die Datenbank wird auf ihren Stand
+ * gebracht.
  */
 class HilfeEinspielen extends Command
 {
     protected $signature = 'hilfe:einspielen';
 
-    protected $description = 'Spielt neue und unveraenderte Hilfekapitel aus der Grundfassung ein';
+    protected $description = 'Bringt die Hilfekapitel auf den Stand der mitgelieferten Dateien';
 
     public function handle(): int
     {
@@ -31,11 +31,11 @@ class HilfeEinspielen extends Command
         $seeder->run();
 
         $this->info(sprintf(
-            '%d neu, %d aktualisiert, %d unveraendert, %d redigiert (nicht angefasst).',
+            '%d neu, %d aktualisiert, %d unveraendert, %d entfernt.',
             $seeder->bilanz['neu'],
             $seeder->bilanz['aktualisiert'],
             $seeder->bilanz['unveraendert'],
-            $seeder->bilanz['redigiert'],
+            $seeder->bilanz['entfernt'],
         ));
 
         return self::SUCCESS;
