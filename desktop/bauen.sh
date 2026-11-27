@@ -149,8 +149,17 @@ if [ "$(uname -s)" = Darwin ]; then
     ablage="$(mktemp -d)"
     ditto "$BUNDLE/macos/Abiplaner.app" "$ablage/Abiplaner.app"
     ln -s /Applications "$ablage/Programme"
-    hdiutil create -quiet -volname "Abiplaner" -srcfolder "$ablage" -ov -format UDZO \
-        "$BUNDLE/dmg/Abiplaner_${VERSION_APP}_aarch64.dmg"
+    # hdiutil scheitert auf den GitHub-Runnern gelegentlich mit „Resource
+    # busy“ (Release 1.0.2, 27.11.2026) — deshalb bis zu fünf Versuche.
+    for versuch in 1 2 3 4 5; do
+        if hdiutil create -volname "Abiplaner" -srcfolder "$ablage" -ov -format UDZO \
+            "$BUNDLE/dmg/Abiplaner_${VERSION_APP}_aarch64.dmg"; then
+            break
+        fi
+        [ "$versuch" = 5 ] && { echo "DMG ließ sich nicht erzeugen." >&2; exit 1; }
+        echo "hdiutil fehlgeschlagen, neuer Versuch in 15 s …" >&2
+        sleep 15
+    done
     rm -rf "$ablage"
 else
     npx tauri build --bundles appimage ${TAURI_EXTRA[@]+"${TAURI_EXTRA[@]}"}
