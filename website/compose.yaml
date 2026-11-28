@@ -15,6 +15,9 @@ services:
     networks:
       - traefik_net
     labels:
+      # Watchtower auf stiller laeuft mit --label-enable: ohne dieses Label
+      # bekommt nginx keine automatischen Updates
+      - "com.centurylinklabs.watchtower.enable=true"
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_net"
       - "traefik.http.routers.abiplaner-website.rule=Host(`abiplaner-bayern.de`) || Host(`www.abiplaner-bayern.de`)"
